@@ -96,12 +96,13 @@ Here are the command options and some information for each of the pyFU executabl
 
 Performs a simple raw image calibration (bias, dark, flat) of raw spectral images.  The YAML configuration file can contain the list of raw calibration files necessary to create the master bias, dark, and flatfield files automatically.
 
-To do a full pre-calibration from raw files, one could simply type something like
+To do a full reduction from raw files, one could simply type something like
 ```shell
-$ ifucal --infile ./raw/raw.fits --outfile ./calib/rawcalib.fits \\
-      --subtract_bias --bias_files "./bias/bias*.fits" --masterbias ./bias/masterbias.fits \\
-      --subtract_dark --dark_files "./dark/dark*.fits" --unitdark   ./dark/unitdark.fits \\
-      --divide_flat   --flat_files "./flat/flat*.fits" --masterflat ./flat/masterflat.fits
+$ ifucal --infile ./raw/raw.fits \
+      --subtract_bias --bias_files "./bias/bias*.fits" --masterbias ./bias/masterbias.fits \
+      --subtract_dark --dark_files "./dark/dark*.fits" --unitdark   ./dark/unitdark.fits \
+      --divide_flat   --flat_files "./flat/flat*.fits" --masterflat ./flat/masterflat.fits \
+      --outfile ./calib/rawcalib.fits
 ```
 which would result in the creation of the master calibration files as well as their use on the raw spectrum image.
 
@@ -575,22 +576,27 @@ but in **ifutool** one can simply type
 ```
 (the **ifutool** commands are numbered so that they can be invoked again by number).
 
-The use of the **pyFU** calibration functionality is also simplified: if one wants to create a master bias image, one can either type
+The use of the **pyFU** calibration functionality is also simplified: if one wants to reduced a night's data without using a YAML configuration file, one can either type
 ```
-$ ifucal --bias_images "./bias/*.fits" --masterbias ./calib/masterbias.fits \
-         --dark_images "./dark/*.fits" --unitdark   ./calib/unitdark.fits \
-         --flat_iamges "./flat/*.fits" --masterflat ./calib/masterflat.fits
-$ ifucal --inputs "./raw/*.fits" --masterbias ./calib/masterbias.fits \
-         --unitdark ./calib/unitdark.fits --masterflat ./calib/masterflat.fits \
-         --outputs "./reduced/red_*.fits"
+$ ifucal --bias_images "./bias/*.fits" --masterbias ./calib/masterbias.fits
+$ ifucal --subtract_bias --masterbias ./calib/masterbias.fits \
+         --dark_images "./dark/*.fits" --unitdark   ./calib/unitdark.fits
+$ ifucal --subtract_bias --masterbias ./calib/masterbias.fits \
+         --subtract_dark --unitdark   ./calib/unitdark.fits \
+         --flat_images "./flat/*.fits" --masterflat ./calib/masterflat.fits
+$ ifucal --subtract_bias --masterbias ./calib/masterbias.fits \
+         --subtract_dark --unitdark   ./calib/unitdark.fits \
+         --divide_flat   --masterflat ./calib/masterflat.fits \
+         --inputs "./raw/*.fits"  --outputs "./reduced/red_*.fits"
 ```
-or one can type
+or one can simply type
 ```
 014> bias ./bias/*.fits ./calib/masterbias.fits
 015> dark ./dark/*.fits ./calib/unitdark.fits
 016> flat ./flat/*.fits ./calib/masterflat.fits
 017> calib ./raw/*.fits ./reduced/red_*.fits
 ```
+(the metadata about the calibration images is automatically updated).
 
 <br/>
 
