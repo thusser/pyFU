@@ -604,6 +604,14 @@ or one can simply type
 ```
 (the metadata about the calibration images is automatically updated).
 
+**ifutool** is just a wrapper around the command-line tools (every time you input a command, the resulting complete command-line syntax is shown), but it is also possible to force the use of additional command-line options within a **ifutool** command using the command extension "&", e.g.
+```
+018> display a.fits
+```
+will display an image using the standard FITS pixel coordinate system (y goes from down to up), but if you wanted to force a display using the usual standard (y goes from up to down), you could add the command-line flag "--flip" via
+```
+019> display a.fits & --flip
+```
 <br/>
 
 ## For maintainers and programmers
