@@ -1,6 +1,6 @@
 # pyFU
 
-<img src="./images/icon.png" height="100">
+<img src="./images/icon.jpg" height="100">
 
 pyFU is a simple set of python objects/scripts for extracting spectra from spectral images produced by (small) integral field unit (IFU) spectrographs.
 The calibration and extraction parameters and IFU fibre properties (e.g. positions) are kept in a single YAML file, e.g.
