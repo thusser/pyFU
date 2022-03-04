@@ -1,5 +1,7 @@
 # pyFU
 
+<img src="./icon.png" height="100">
+
 pyFU is a simple set of python objects/scripts for extracting spectra from spectral images produced by (small) integral field unit (IFU) spectrographs.
 The calibration and extraction parameters and IFU fibre properties (e.g. positions) are kept in a single YAML file, e.g.
 ```yaml
@@ -48,7 +50,7 @@ If you have complicated data and/or want to reduce things by hand, there are muc
 
 Copy the git-address above, go to the directory you want to install pyFU in, and type
 ```
-$ git clone https://gitlab.gwdg.de/fhessma/pyFU.git
+$ git clone https://github.com/fhessman/pyFU.git
 ```
 The required python packages are listed in the file requirements.txt
 Install the package via
@@ -550,6 +552,41 @@ pyFU.wavcal.transfer_wavelengths_by_index (sky,target)
 
 # PRODUCE A FOCAL PLANE IMAGE
 img = pyFU.ifu...
+```
+
+<br/>
+
+## pyfu_tool -- a simple tool for testing/configuring pyFU
+
+The **pyfu_tool.py** script (installed as **ifutool**) is a simple command-line script designed to make it easier to test and configure *pyFU*.  The internal (YAML) configuration enables one to simplify the invocation of the pyFU commands.  For example, **ifucal** can be used to project an IFU image in the x-direction (e.g. to see the spatial separation of the fibres along the slit), divide an image by some long-term flat, or simply add up a long list of images:
+```
+$ ifucal --input a.fits --output b.fits --ymean
+$ ifucal --input b.fits --output b_corr.fits --add --other ltflat.fits
+$ ifucal --input "./raw/*.fits" --sum -output sum.fits
+```
+but in **ifutool** one can simply type
+```
+011> b.fits = xmean a.fits
+012> b_corr.fits = b.fits / ltflat.fits
+013> sum.fits = sum ./raw/*.fits
+```
+(the **ifutool** commands are numbered so that they can be invoked again by number).
+
+The use of the **pyFU** calibration functionality is also simplified: if one wants to create a master bias image, one can either type
+```
+$ ifucal --bias_images "./bias/*.fits" --masterbias ./calib/masterbias.fits \
+         --dark_images "./dark/*.fits" --unitdark   ./calib/unitdark.fits \
+         --flat_iamges "./flat/*.fits" --masterflat ./calib/masterflat.fits
+$ ifucal --inputs "./raw/*.fits" --masterbias ./calib/masterbias.fits \
+         --unitdark ./calib/unitdark.fits --masterflat ./calib/masterflat.fits \
+         --outputs "./reduced/red_*.fits"
+```
+or one can type
+```
+014> bias ./bias/*.fits ./calib/masterbias.fits
+015> dark ./dark/*.fits ./calib/unitdark.fits
+016> flat ./flat/*.fits ./calib/masterflat.fits
+017> calib ./raw/*.fits ./reduced/red_*.fits
 ```
 
 <br/>
