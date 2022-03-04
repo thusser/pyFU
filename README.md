@@ -61,6 +61,7 @@ Install the package via
 $ sudo python setup.py install
 ```
 
+
 ## Using pyFU from the command line
 
 pyFU objects can be used from the command line, since each major sub-package contains a command-line version that performs that particular function and the setup script creates these scripts during installment: 
@@ -87,6 +88,11 @@ The results are documented using the standard python logging module.
 Normally, one would want to use the "--show" or "--plot" flag in order to have intermediate results plotted (primitively, using standard matplotlib functionality and a minimum of additional interaction).
 Some scripts have a "--details" flag to produce even more plots of intermediate steps.
 Currently, some of the plots have a primitive matplotlib "menu" at the lower left with labels like "ABORT" or "SHOW RESULTS": simply press them to invoke their content when the graphics window is closed; these are obviously just debugging tools for what otherwise is intended to be an un-attended automatic pipeline.
+
+These links are set via the shell script **pyfu_bin_links.sh**. You need to set your own paths: the defaults are
+- **/opt/local/bin/python** for the interpreter;
+- **~/Library/python/pyFU** for the root directory
+- **/opt/local/bin/** as the directory for the links to the executable scripts (e.g. **ifutra** is the link to **trace.py**).
 
 Here are the command options and some information for each of the pyFU executable scripts.
 
