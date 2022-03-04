@@ -516,7 +516,7 @@ $ ifudis --table calibrated.fits
 
 ## Using pyFU objects and functions in your own programs
 
-While the command-line versions are fine for testing, the whole purpose of pyFU is to build IFU pipelines.
+While the command-line versions are fine for most purposes, you may want to build a single IFU pipeline rather than using multiple invokations of a python interpreter and keeping track of all the intermediate steps as files rather than objects.
 Here is a simple example of such (with no error-handling!) using the components described above:
 
 WORK-IN-PROGRESS: IGNORE THE FOLLOWING FOR NOW!
