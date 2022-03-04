@@ -825,7 +825,7 @@ def parabolic_peak (x,y,x0,w=5,positive=True) :
 
 	return xp,coef
 
-def show_hdu (hdu, vmin=None, vmax=None, aspect=None, colourbar=False, flip=True, kappa=3.0, fits_coords=True) :
+def show_hdu (hdu, vmin=None, vmax=None, aspect=None, colourbar=False, flip=False, kappa=3.0, fits_coords=True) :
 	"""
 	Display an image from a FITS HDU using pixel-centered coordinates..
 
@@ -842,18 +842,17 @@ def show_hdu (hdu, vmin=None, vmax=None, aspect=None, colourbar=False, flip=True
 	hdr = hdu.header
 	data = hdu.data
 	xmin,xmax,ymin,ymax,zmin,zmax = get_image_limits (hdu)
+	xmin = -0.5
+	xmax += 0.5
 
 	# GET COORDINATES OF EXTREME IMAGE LIMITS INCLUDING PIXEL SIZES
-	if fits_coords :
-		flip = False
-		xmin,ymin = -0.5,-0.5
-		xmax += 0.5
-		ymax += 0.5
-	else :
-		xmin = -0.5
-		xmax += 0.5
+	if flip :
 		ymin = ymax+0.5
 		ymax = -0.5
+	elif fits_coords :
+		flip = False
+		ymin = -0.5,-0.5
+		ymax += 0.5
 
 	zmed,zsig = np.median(data),np.std(data)
 	if vmax is not None :
