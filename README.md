@@ -3,7 +3,26 @@
 <img src="./images/icon.jpg" height="100">
 
 pyFU is a simple set of python objects/scripts for extracting spectra from spectral images produced by (small) integral field unit (IFU) spectrographs.
-The calibration and extraction parameters and IFU fibre properties (e.g. positions) are kept in a single YAML file, e.g.
+
+IFU spectrographs use the ends of optical fibres arranged together in some pattern at the input focus and then re-arrange those fibres into a classical spectrograph slit which is then imaged onto a 2-D detector.  In order to extract the spectra from such images, the individual spectral image traces dispersed perpendicularly to the slit direction have to be identified and the signal along those traces extracted to produce a 1-D spectrum.  By using the extracted data from emission line lamps (e.g. He-Ne, He-Ar,...) or simply by using the Solar spectrum provided by the daylight sky, the wavelength-pixel calibration can be obtained, resulting in a final wavelength-versus-flux spectrum.  Since the positions of individual fibres within the input pattern is known, one can re-construct a quasi-3D spectral "image" (2-D in the input focal plane + 1D in wavelength) at any measured wavelength.
+
+The package has been developed for rather low-resolution (R>1000) stable spectrographs that do not need wavelength calibrations during the night (most IFU spectrographs are fibre-coupled, after all).
+A solar spectrum from the sky or from Moonlight is as good or a better wavelength calibrator (many more lines all over the spectrum) than a low-resolution arc-lamp in this case, and no special spectral line catalogue is needed.
+Wavelength calibration is achieved by cross-correlating chunks of raw spectrum with a reference spectrum derived from a Solar atlas using an approximate wavelength calibration that the user must provide (e.g. by eye-balling the sky spectrum or an arc-lamp spectrum).
+Unlike normal spectral packages, there is no software (yet!) for directly determining the wavelength calibration from arc-lamp spectra in **pyFU**. You can, however, import a simple CSV table containing the wavelengths and positions of lines determined elsewhere (e.g. in ds9 or using the pyFU display function) and calculate a wavelength calibration.  This can then be used as the intial solution for the solar solution or as the final solution.
+
+The parameters for the IFU (number, positions, labels, and individual diameters of the fibres), traced spectral images (model for the positions and relative amplitudes of the spectra) or extracted spectra (labels of the original fibres) are kept within the FITS headers.
+Rather than using hierarchical FITS keywords,
+the information about individually traced spectra are coded into keyword names for each fibre and parameter
+(e.g. the keyword for the 2nd coefficient of the position tracing polynomial of the 12th fibre is "TR-T0122"), but the format used to create the coding is also included in the header (e.g. "TR-TFORM" = "TR-{0:.3d}{1:1d}").
+The final spectra are placed in a FITS binary table with multiple HDU's, one per spectrum (in addition to the table metadata HDU).
+The FITS keywords and keyword formats can be configured at will; the defaults for these are kept in the file "defaults.py".
+The current version does not yet support the subtraction of background scattered light.
+
+This package is not intended to be used for massive IFU's (some of the python used is too slow) or really complicated spectral imaging (e.g. drastically different traces within the same spectral image).
+If you have complicated data and/or want to reduce things by hand, there are much better packages like P3D (see Sandin et al., 2010, Astron. Ap. A35 and http://p3d.sourceforge.net).
+
+The **pyFU** calibration and extraction parameters and IFU fibre properties (e.g. positions) are generally kept in a single YAML file, e.g.
 ```yaml
 # example YAML file for pyFU
   tracer :
@@ -27,23 +46,7 @@ The calibration and extraction parameters and IFU fibre properties (e.g. positio
         f6 : [-0.866,0.5]
         f7 : [-0.866,-0.5]
 ```
-(a full  YAML configuration file with all keywords is available in the distribution).
-
-The package has been developed for rather low-resolution (R>1000) stable spectrographs that do not need wavelength calibrations during the night (most IFU spectrographs are fibre-coupled, after all).
-A solar spectrum from the sky or from Moonlight is as good or a better wavelength calibrator (many more lines all over the spectrum) than a low-resolution arc-lamp in this case, and no special spectral line catalogue is needed.
-Wavelength calibration is achieved by cross-correlating chunks of raw spectrum with a reference spectrum derived from a Solar atlas using an approximate wavelength calibration that the user must provide (e.g. by eye-balling the sky spectrum or an arc-lamp spectrum).
-Unlike normal spectral packages, there is no software (yet!) for directly determining the wavelength calibration from arc-lamp spectra in pyFU, **pyFU** will let you import a simple CSV table containing the wavelengths and positions of lines determined elsewhere (e.g. in ds9 or using the pyFU display function) and calculate a wavelength calibration.  This can then be used as the intial solution for the solar solution.
-
-The parameters for the IFU (number, positions, labels, and individual diameters of the fibres), traced spectral images (model for the positions and relative amplitudes of the spectra) or extracted spectra (labels of the original fibres) are kept within the FITS headers.
-Rather than using hierarchical FITS keywords,
-the information about individually traced spectra are coded into keyword names for each fibre and parameter
-(e.g. the keyword for the 2nd coefficient of the position tracing polynomial of the 12th fibre is "TR-T0122"), but the format used to create the coding is also included in the header (e.g. "TR-TFORM" = "TR-{0:.3d}{1:1d}").
-The final spectra are placed in a FITS binary table with multiple HDU's, one per spectrum (in addition to the table metadata HDU).
-The FITS keywords and keyword formats can be configured at will; the defaults for these are kept in the file "defaults.py".
-The current version does not yet support the subtraction of background scattered light.
-
-This package is not intended to be used for massive IFU's (some of the python used is too slow) or really complicated spectral imaging (e.g. drastically different traces within the same spectral image).
-If you have complicated data and/or want to reduce things by hand, there are much better packages like P3D (see Sandin et al., 2010, Astron. Ap. A35 and http://p3d.sourceforge.net).
+A full  YAML configuration file with all keywords is available in the distribution or can be generically constructed using the **--generic** flag of the command-line routines.
 
 
 ## Installing pyFU
