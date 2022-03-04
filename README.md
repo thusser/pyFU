@@ -29,10 +29,10 @@ The calibration and extraction parameters and IFU fibre properties (e.g. positio
 ```
 (a full  YAML configuration file with all keywords is available in the distribution).
 
-Unlike normal spectral packages, there is no software (yet!) for determining the wavelength calibration from arc-lamp spectra in pyFU: the package has been developed for rather low-resolution (R>1000) stable spectrographs that do not need wavelength calibrations during the night (most IFU spectrographs are fibre-coupled, after all).
+The package has been developed for rather low-resolution (R>1000) stable spectrographs that do not need wavelength calibrations during the night (most IFU spectrographs are fibre-coupled, after all).
 A solar spectrum from the sky or from Moonlight is as good or a better wavelength calibrator (many more lines all over the spectrum) than a low-resolution arc-lamp in this case, and no special spectral line catalogue is needed.
 Wavelength calibration is achieved by cross-correlating chunks of raw spectrum with a reference spectrum derived from a Solar atlas using an approximate wavelength calibration that the user must provide (e.g. by eye-balling the sky spectrum or an arc-lamp spectrum).
-In the future, one should add software that uses the night sky spectrum to apply small corrections for spectrographs needing such.
+Unlike normal spectral packages, there is no software (yet!) for directly determining the wavelength calibration from arc-lamp spectra in pyFU, **pyFU** will let you import a simple CSV table containing the wavelengths and positions of lines determined elsewhere (e.g. in ds9 or using the pyFU display function) and calculate a wavelength calibration.  This can then be used as the intial solution for the solar solution.
 
 The parameters for the IFU (number, positions, labels, and individual diameters of the fibres), traced spectral images (model for the positions and relative amplitudes of the spectra) or extracted spectra (labels of the original fibres) are kept within the FITS headers.
 Rather than using hierarchical FITS keywords,
