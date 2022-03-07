@@ -102,11 +102,11 @@ Performs a simple raw image calibration (bias, dark, flat) of raw spectral image
 
 To do a full reduction from raw files, one could simply type something like
 ```shell
-$ ifucal --infile ./raw/raw.fits \
+$ ifucal --infiles ./raw/raw.fits \
       --subtract_bias --bias_files "./bias/bias*.fits" --masterbias ./bias/masterbias.fits \
       --subtract_dark --dark_files "./dark/dark*.fits" --unitdark   ./dark/unitdark.fits \
       --divide_flat   --flat_files "./flat/flat*.fits" --masterflat ./flat/masterflat.fits \
-      --outfile ./calib/rawcalib.fits
+      --outfiles ./calib/rawcalib.fits
 ```
 which would result in the creation of the master calibration files as well as their use on the raw spectrum image.
 
@@ -116,8 +116,8 @@ The equivalent YAML entry would look like
 ```yaml
 # mycalib.yaml
 calib:
-  infile:  ./raw/raw.fits
-  outfile: ./calib/rawcalib.fits
+  infiles:  ./raw/raw.fits
+  outfiles: ./calib/rawcalib.fits
   bias:
     subtract_bias: True
     infiles:       ./bias/bias*.fits
@@ -134,7 +134,7 @@ calib:
 Note that the command line input has priority over the configuration file,
 so that the following command would have the same effect as the previous one but for different input and output files:
 ```shell
-$ ifucal --infile ./raw/raw2.fits --outfile ./calib/rawcalib2.fits --yaml mycalib.yaml
+$ ifucal --infiles ./raw/raw2.fits --outfiles ./calib/rawcalib2.fits --yaml mycalib.yaml
 ```
 If the original command had been given, producing the master calibration files, then the second command would not
 repeat their creation and only use the stored files.
@@ -400,7 +400,7 @@ Syntax | Description
 --slices SLICES, -E SLICES | name of external CSV file with list of slice positions (xavg,xleft,dx) (default None)
 --generic GENERIC, -G GENERIC | output generic trace configuration as a YAML file (default None)
 --sigma SIGMA, -g SIGMA | Gaussian width of spectra (default 3)
---infile INFILE, -i INFILE | FITS file name (default ./spectra/test.fits) (default None)
+--infiles INFILE, -i INFILE | FITS file name (default ./spectra/test.fits) (default None)
 --mid\_slice MID\_SLICE, -m MID\_SLICE | middle slice used to find spectra (default middle)
 --number\_slices NUMBER\_SLICES, -N NUMBER\_SLICES | number of vertical slices (default 30)
 --number\_fibres NUMBER\_FIBRES, -n NUMBER\_FIBRES | number of IFU fibres (default None)
@@ -487,7 +487,7 @@ Here, the trace parameters are output to the YAML file "trace.yaml".
 
 Next, let's extract the traced spectra into a FITS binary table:
 ```shell
-$ ifuext --infile rawsky.fits --trace trace.yaml --outfile extsky.fits
+$ ifuext --infiles rawsky.fits --trace trace.yaml --outfiles extsky.fits
 ```
 
 In order to wavelength-calibrate these extracted spectra, we need a reference spectrum, here derived from our Liege spectral atlas:
@@ -497,21 +497,21 @@ $ ifusol --atlas liege.fits --resolution 3000 --dispersion 0.1 --limits 350,950 
 
 Now we can wavelength-calibrate the extracted spectra using our reference spectrum with the correct resolution:
 ```shell
-$ ifuwav --infile extsky.fits --reference sun.fits --approx 400,0.1 --outfile sky.fits
+$ ifuwav --infiles extsky.fits --reference sun.fits --approx 400,0.1 --outfiles sky.fits
 ```
 
 Now we can extract the target data
 ```shell
-$ ifuext --infile raw.fits --trace trace.yaml --outfile target.fits
+$ ifuext --infiles raw.fits --trace trace.yaml --outfiles target.fits
 ```
 and transfer the wavelength calibration and apply the flux-calibration stored in the calibrated sky.fits table via
 ```shell
-$ ifuwav --infile target.fits --source sky.fits --outfile calibrated.fits
+$ ifuwav --infiles target.fits --source sky.fits --outfiles calibrated.fits
 ```
 
 Finally, we can construct an Halpha focal-plane IFU image of the extracted, wavelength-calibrated data via
 ```shell
-$ ifuima --infile calibrated.fits --wave1 656.0 --wave2 656.6 -outfile ifu.fits
+$ ifuima --infiles calibrated.fits --wave1 656.0 --wave2 656.6 -outfiles ifu.fits
 ```
 
 The spectral images and individual spectra can be displayed via
@@ -628,7 +628,7 @@ def main () :
         'yaml': {'path':None,'default':None, 'flg':'-y','type':str,'help':'global YAML configuration file for parameters'}
                 }
 ```
-The "path" key in each dictionary refers to the position of the dictionary entry in the pyFU configuration dictionary.  Here, e.g., the 'path':'blah:' entry for the "outfile" key means that the global configuration dictionary is expected to have a sub-directory with the key "blah", indicated by the colon in the string "blah:"; if the colon were missing, then "blah" would be a keyed value instead); this syntax enable the connection of all command line arguments to values anywhere within the pyFU configuration dictionary; note that the "verbose" dictionary indicates that the command line argument is not represented in the pyFU configuration dictionary - the path is None;
+The "path" key in each dictionary refers to the position of the dictionary entry in the pyFU configuration dictionary.  Here, e.g., the 'path':'blah:' entry for the "outfiles" key means that the global configuration dictionary is expected to have a sub-directory with the key "blah", indicated by the colon in the string "blah:"; if the colon were missing, then "blah" would be a keyed value instead); this syntax enable the connection of all command line arguments to values anywhere within the pyFU configuration dictionary; note that the "verbose" dictionary indicates that the command line argument is not represented in the pyFU configuration dictionary - the path is None;
 - the configuration dictionary is then passed to **parse_arguments()**, which returns the command line arguments (like argparse.ArgumentParser.parse_args()) and the parsed configuration dictionary (many default values are set in defaults.py); e.g.
 ```
         args,cfg = parse_arguments (arguments, readme=README)
