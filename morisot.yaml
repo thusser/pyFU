@@ -1,0 +1,195 @@
+# morisot.yaml
+
+# When inputting float lists, please use decimal points (to distinguish them from int lists).
+
+filename: # NAME OF TARGET IMAGE TO BE REDUCED
+
+# ---- FORMATS USED TO CONSTRUCT FITS HEADER KEYS (SEE defaults.py FOR KEYS)
+formats:
+  # ypos_format:  "IF-YP{0:03d}"      # FORMAT FOR FIBRE Y-POSITION   KEYWORD
+
+# ---- OPTIONAL SIMPLE RAW IMAGE CALIBRATION
+calib:
+  infile:
+  outfile:
+  bias:
+    subtract_bias: False
+    infiles:
+    masterbias:
+  dark:
+    subtract_dark: False
+    infiles:
+    unitdark:
+  flat:
+    divide_flat: False
+    infiles:
+    masterflat:
+
+# ---- SOLAR REFERENCE SPECTRUM
+solar:
+  atlas: ./liege.fits      # PATH OF THE INPUT REFERENCE ATLAS
+  dispersion: 0.1          # OUTPUT LINEAR DISPERSION IN nm
+  fcol: flux               # NAME OF THE INPUT FLUX COLUMN
+  flxcol: flux             # NAME OF THE OUTPUT FLUX COLUMN
+  limits: [400.,730.]      # OUTPUT WAVELENGTH RANGE IN nm
+  # npixels: 2048           # EITHER FROM dispersion+limits OR limits+npixels
+  outfile: ./solar2.fits   # PATH OF THE OUTPUT REFERENCE SPECTRUM
+  wavcol: wavelength       # NAME OF THE OUTPUT WAVELENGTH COLUMN
+  wcol: wavelength         # NAME OF THE INPUT WAVELENGTH COLUMN
+  wresolution: 0.4         # OUTPUT RESOLUTION IN nm; DEFAULT IS 3pix*dispersion
+
+# ---- TRACING THE LOCATIONS OF SPECTRA IN THE IFU IMAGES
+trace:
+  bkg_factor: 0.05                   # BACKGROUND CUT-OFF FACTOR USED TO FIND TRACES
+  bias: 400.                         # ASSUMED BACKGROUND BIAS (0 IF PROPERLY SUBTRACTED)
+  dy_max: 4                          # MAXIMUM DEVIATION OF TRACE ABOVE SPECTRUM
+  dy_min: -4                         # MINIMUM DEVIATION OF TRACE BELOW SPECTRUM
+  fit_profiles: true                 # FIT THE VERTICAL TRACES WITH WIDTHS,POSITIONS?
+  infile: ./input.fits               # PATH OF INPUT FILE
+  ampl_order: 5                      # POLYNOMIAL ORDER OF FIT TO RELATIVE AMPLITUDES 
+  trace_order: 5                     # POLYNOMIAL ORDER OF SPATIAL TRACE
+  #mid_slice:                         # SLICE TO START TRACING, DEFAULT = MIDDLE SLICE
+  number_slices: 40                  # NUMBER OF AVERAGED VERTICAL CUTS = "SLICES"
+  number_traces: 28                  # NUMBER OF SPECTRA TO BE TRACED
+  save: ./trace.yaml                 # PATHNAME OF OUTPUT FILE WITH TRACE COEFFICIENTS
+  sigma: 1.2                         # EXPECTED GAUSSIAN WIDTH OF SPECTRA
+  sigmas:                            # GAUSSIAN WIDTHS OF NAMES FIBRES
+    b1: 2.4
+    b2: 2.4
+  sigma_factor: 2.                   # DIAMETER RATIO OF BIGGER FIBRES, IF PRESENT
+  sigma_kappa: 2.0                   # KAPPA CLIPPING FOR FINDING FAT FIBRES
+  sigma_order: 5                     # POLYNOMIAL ORDER FOR AMPLITUDE MODEL
+  spacing: 8.                        # SPACING OF NORMAL FIBRES
+  spacings:                          # PARTICULAR SPACING OF PARTICULAR FIBRES
+    b1: 16.
+    b2: 16.
+  window_centroid: 7                 # NUMBER OF PIXELS USED TO FIND TRACE CENTRES
+  window_max: 5                      # ???
+  window_profile: 7                  # SIZE OF WINDOW USED FOR FITTING VERTICAL PROFILE
+  #x_min: 100                         # MINIMUM PIXEL RANGE TO TRACE
+  #x_max: 1900                        # MAXIMUM PIXEL RANGE TO TRACE
+
+# ---- EXTRACTING SPECTRA FROM A TRACED IFU IMAGE
+extract:
+  gain: 1.97                                   # CCD GAIN IN e-/ADU
+  infiles: ./input.fits                        # PATH OF INPUT IFU IMAGE
+  outfiles: ./extracted.fits                   # PATH OF OUTPUT FILE(S)
+  #prefix: "./TEST/extracted{0:30d}.dat"        # OPTIONAL OUTPUT FORMAT
+  #restore: true                                # GET TRACE INFO FROM FITS HEADER
+  ron: 10.6                                    # CCD READOUT NOISE IN e-
+  trace: ./trace.yaml                          # PATHNAME OF COEFFICIENTS FILE
+
+# ---- CALIBRATING THE WAVELENGTHS OF EXTRACTED SPECTRA
+wavcal:
+  #approx: [412.915,0.1378,-6.325e-6]   # wave(pix)=a+b*pix+c*pix^2+...
+  approx: [4.3058e+02,1.3412e-01,-3.9794e-6,-5.0358e-10] # wave(pix)=a+b*pix+c*pix^2+...
+  errcol: err_flux                     # NAME OF FLUX ERROR COLUMN
+  flux_function:                       # POLYNOMIAL FUNCTION: polynomial|laguerre|legendre|hermite
+  flux_order:                          # POLYNOMIAL ORDER OF FLUX-CORRECTION FROM C-C (COMMENT OUT TO PREVENT)
+  flxcol: flux                         # NAME OF FLUX COLUMN
+  infiles: ./extracted.fits            # PATH OF INPUT SPECTRA FILE
+  #in_format: "ext*.txt"               # FORMAT FOR FINDING MULTIPLE INPUT SPECTRA
+  model: cubic                         # MODEL FOR WAVELENGTH-CALIBRATION (linear|quadratic|cubic|exp|ln|powerlaw)
+  outfiles: ./calibrated.fits          # PATH OF FINAL CALIBRATION SPECTRA
+  #out_format: "cal{0:03d}.txt"         # FORMAT FOR CREATING MULTIPLE OUTPUT SPECTRA
+  pause: True                          # PAUSE AFTER EACH SPECTRUM CALIBRATION
+  pixcol: pixel                        # NAME OF PIXEL COLUMN
+  wave_ranges: [[400.,700.]]           # RANGES OF WAVELENGTHS TO USE IN CALIBRATION
+  reference: ./solar2.fits             # PATH OF REFERENCE SPECTRUM FILE
+  spacing: 125                         # PIXEL SPACING OF C-C WINDOWS
+  wavcol: wavelength                   # NAME OF WAVELENGTH COLUMN
+  window_cc: 120                       # SIZE OF C-C WINDOWS
+
+# ---- REBIN EXTRACTED SPECTRA TO A CONSTANT DISPERSION
+rebin:
+  dispersion: 0.1             # OUTPUT LINEAR DISPERSION
+  errcol: err_flux            # NAME OF FLUX ERROR COLUMN
+  flxcol: flux                # NAME OF FLUX COLUMN
+  icxcol: index               # NAME OF PIXEL COLUMN
+  infiles: ./calibrated.fits  # PATH OF INPUT SPECTRUM TABLE
+  #limits: [400.,700.]         # OUTPUT WAVELENGTH RANGE IN nm
+  #npixels: 2048               # EITHER FROM dispersion+limits OR limits+npixels
+  outfiles: ./rebinned.fits   # PATH OF OUTPUT SPECTRUM TABLE
+  pixcol: pixel               # NAME OF PIXEL COLUMN
+  #reference: ./solar.fits     # NAME OF FILE WITH REFERENCE WAVELENGTHS
+  wavcol: wavelength          # NAME OF WAVELENGTH COLUMN
+  #wresolution: 0.3            # WAVELENGTH RESOLUTION TO BE APPLIED
+
+# ---- WAVELENGTH CALIBRATION USING LAMP SPECTRA CATALOGUE
+
+lamp:
+  infiles:                     # PATH OF EXTRACTED SPECTRA
+  outfiles:                    # PATH OF WAVELENGTH CALIBRATEF SPECTRA
+  model: cubic                 # linear|quadratic|cubic|exp|power
+  wavetable: ./wavetable.csv   # WITH COLUMNS wavelength,xavg,xleft,dx
+
+# ---- CREATING IFU IMAGES FROM EXTRACTED SPECTRA
+image:
+  #pixels: [100,1500]          # INTEGRATION PIXELS (IF NOT WAVELENGTH CALIBRATED)
+  #wavelengths: [400.,800.]    # INTEGRATION WAVELENGTHS
+  infiles: ./calibrated.fits  # PATH OF INPUT EXTRACTED SPECTRA
+  logscale: True              # USE LOGARITHMIC INTENSITY SCALE
+  outfiles: ./ifu_image.png   # PATH OF OUTPUT IFU IMAGE
+
+# ---- FIBRE ID'S AND GEOMETRY, NEEDED e.g. FOR CREATING IFU IMAGES FROM WAVELENGTH CALIBRATED SPECTRA
+ifu:
+  name: MORISOT
+  number_fibres: 39          # NUMBER OF FIBRES >= NUMBER OF SPECTRA IN IFU SPECTRAL IMAGE
+  slit_labels: [b1,b2,f24,f23,f22,f21,f20,f19,f18,f17,f16,f15,f14,f13,f12,f11,f10,f9,f8,f7,f6,f5,f4,f3,f2,f1,f37,f36,f35,f34,f33,f32,f31,f30,f29,f28,f27,f26,f25 ]
+  slit_start: 1              # WHICH LABEL IS THE STARTING LABEL ACTUALLY USED?
+  inner_diameter: 100        # GENERIC INNER DIAMETER OF FIBRES (MICRONS?)
+  outer_diameter: 110        # GENERIC OUTER DIAMETER OF FIBRES (MICRONS?)
+  inner_diameters:           # SPECIFIC INNER DIAMETERS OF NAMED FIBRES
+    b1: 200
+    b2: 200
+  outer_diameters:           # SPECIFIC OUTER DIAMETERS OF NAMED FIBRES
+    b1: 220
+    b2: 220
+  focal_positions:
+    b1: [-1500.,0.]
+    b2: [+1500.,0.]
+    f1: [0.00,0.00]
+    f2: [-109.32,7.57]
+    f3: [-54.32,102.77]
+    f4: [56.36,103.777]
+    f5: [111.70,1.51]
+    f6: [52.96,-102.43]
+    f7: [-63.15,-93.35]
+    f8: [-224.07,10.60]
+    f9: [-182.31,114.54]
+    f10: [-111.02,198.30]
+    f11: [1.02,208.39]
+    f12: [108.98,193.26]
+    f13: [174.17,100.42]
+    f14: [224.07,-0.50]
+    f15: [179.26,-106.47]
+    f16: [111.02,-193.26]
+    f17: [0.00,-201.33]
+    f18: [-110.00,-193.26]
+    f19: [-186.39,-110.50]
+    f20: [-328.98,47.94]
+    f21: [-286.20,152.89]
+    f22: [-213.89,240.69]
+    f23: [-122.22,307.29]
+    f24: [-7.13,321.42]
+    f25: [102.87,308.30]
+    f26: [203.70,257.84]
+    f27: [279.07,174.08]
+    f28: [315.74,70.14]
+    f29: [326.94,-39.86]
+    f30: [285.19,-143.81]
+    f31: [221.02,-233.63]
+    f32: [130.37,-307.29]
+    f33: [18.33,-311.33]
+    f34: [-93.70,-305.28]
+    f35: [-199.63,-261.88]
+    f36: [-285.19,-172.06]
+    f37: [-311.67,-62.06]
+
+# ---- PRODUCING MODEL IFU IMAGES FOR TESTING PURPOSES
+fake:
+  shape: [250,2048]         # SHAPE OF THE OUTPUT IFU IMAGE
+  skew: [1.,1.]             # MORPHOLOGICAL SKEW COEFFICIENTS 
+  pattern: ./solar.fits     # PATH OF THE OPTIONAL 1-D PATTERN SPECTRUM 
+  outfile: ./test.fits      # PATH OF THE OUTPUT IFU SPECTRAL IMAGE
+
