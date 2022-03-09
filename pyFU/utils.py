@@ -260,6 +260,7 @@ def get_list_of_paths_and_filenames (path_pattern, mode='both') :
 
 	# EXTRACT DIRECTORY NAME AND FILE PATTERN
 	pathname = os.path.dirname  (path_pattern)
+	if pathname == '' or pathname == None : pathname = './'
 	pattern  = os.path.basename (path_pattern)
 
 	# GET LIST OF ALL FILES IN THAT DIRECTORY
@@ -840,7 +841,6 @@ def show_hdu (hdu, vmin=None, vmax=None, aspect=None, colourbar=False, flip=Fals
 	is NX+0.5,NY+0.5).
 	"""
 	hdr = hdu.header
-	data = hdu.data
 	xmin,xmax,ymin,ymax,zmin,zmax = get_image_limits (hdu)
 	xmin = -0.5
 	xmax += 0.5
@@ -851,10 +851,10 @@ def show_hdu (hdu, vmin=None, vmax=None, aspect=None, colourbar=False, flip=Fals
 		ymax = -0.5
 	elif fits_coords :
 		flip = False
-		ymin = -0.5,-0.5
+		xmin,ymin = -0.5,-0.5
 		ymax += 0.5
 
-	zmed,zsig = np.median(data),np.std(data)
+	zmed,zsig = np.median(hdu.data),np.std(hdu.data)
 	if vmax is not None :
 		zmax = vmax
 	elif kappa is not None :
@@ -868,6 +868,7 @@ def show_hdu (hdu, vmin=None, vmax=None, aspect=None, colourbar=False, flip=Fals
 		origin = 'upper'
 	else :
 		origin = 'lower'
+	data = np.array(hdu.data,dtype=float)+0.
 	im = plt.imshow (data, interpolation='none', aspect=aspect, origin=origin,
 				extent=(xmin,xmax,ymin,ymax), vmax=zmax, vmin=zmin)
 	if colourbar :
@@ -948,7 +949,7 @@ def read_tables (pathname=None, fmt=None) :
 
 	files = get_list_of_paths_and_filenames (fullname)
 	for f,name in files :
-		if ftype == '.fit' or '.fits' :
+		if ftype == '.fit' or ftype == '.fits' or ftype == '.fits.gz' :
 			hdus = fits.open (f)
 			header = hdus[0].header
 			for i in range(1,len(hdus)) :
@@ -957,13 +958,11 @@ def read_tables (pathname=None, fmt=None) :
 				# BINARY TABLE
 				if 'XTENSION' in hdr and hdr['XTENSION'] == 'BINTABLE' :
 					header = hdr
-					logging.debug ('extracting tabular spectrum from {0},HDU#{1} ...'.format(f,i))
 					t = Table.read (hdus,hdu=i)
 					t.meta['FILENAME'] = name+'#{0}'.format(i)
 					tables.append(t)
 				# 1-D "IMAGE"
 				elif 'NAXIS1' in hdr :
-					logging.debug ('extracting image spectrum from {0} ...'.format(name))
 					t = vector2Table (hdu)
 					if t is not None :
 						t.meta['FILENAME'] = name

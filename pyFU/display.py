@@ -75,9 +75,9 @@ def plot_tables (tables, idx=None, label=None, key=None, value=None,
 
 		# SHOW METADATA?
 		if show_metadata :
-			print (f'\n\tMetadata for table #{i}:')
+			logging.info (f'Metadata for table #{i}:')
 			for ky in hdr :
-				print (f'\t{ky} = {hdr[ky]}')
+				logging.info (f'\t{ky} = {hdr[ky]}')
 
 		# PLOT OR NOT?
 		ok = False
@@ -188,11 +188,9 @@ def cursor_input (data, show_method=show_hdu, *args, **kwargs) :
 
 	pts = []
 	pt = plt.ginput(1, timeout=-1, show_clicks=True, mouse_add=1, mouse_pop=3, mouse_stop=2)
-	print (pt,len(pt))
 	while len(pt) == 1 :
 		pts.append(pt)
 		pt = plt.ginput(1, timeout=-1, show_clicks=True, mouse_add=1, mouse_pop=3, mouse_stop=2)
-		print (pt,len(pt))
 	return pts
 
 def show_hex (hdus, xkey='IFU-XPOS', ykey='IFU-YPOS', wavelength=None) :
@@ -263,7 +261,6 @@ class SimpleMenuItem (artist.Artist):
 			self.on_select(self)
 
 	def set_extent(self, x, y, w, h):
-		# print(x, y, w, h)
 		self.rect.set_x(x)
 		self.rect.set_y(y)
 		self.rect.set_width(w)
@@ -410,15 +407,13 @@ def main () :
 		infiles,outfiles = get_infiles_and_outfiles (args.tables,args.outfiles)
 		for infile,outfile in zip(infiles,outfiles) :
 			spectra,hdr = read_tables (infile)
-			print (f'Spectral plot(s) from table of {len(spectra)} spectra ...')
-			print (f'\tnumber of spectra in table: {len(spectra)}')
 			if args.metadata :
-				print (f'\n\tMetadata for tables:')
+				logging.info (f'\n\tMetadata for tables:')
 				for key in hdr :
-					print (f'\t{key} = {hdr[key]}')
-			plot_tables (spectra,idx=args.index,key=args.key,value=args.value,label=args.fibre,mode='individual',
-						xkey=args.xcol,ykey=args.ycol,title=infile, show_metadata=args.metadata,
-						outfile=outfile)
+					logging.info (f'\t{key} = {hdr[key]}')
+			plot_tables (spectra,idx=args.index,key=args.key,value=args.value,label=args.fibre, \
+						mode='individual', xkey=args.xcol,ykey=args.ycol,title=infile, \
+						show_metadata=args.metadata, outfile=outfile)
 			if args.index is None :
 				plt.title (infile)
 				if outfile is None :
@@ -430,11 +425,11 @@ def main () :
 	elif args.images is not None :
 		infiles,outfiles = get_infiles_and_outfiles (args.images,args.outfiles)
 		for infile,outfile in zip(infiles,outfiles) :
-			print ('Full-window show_hdu version with aspect=\'auto\':')
 			hdus = fits.open (infile)
-			hdr = hdus[args.hdu].header
+			hdu = hdus[args.hdu]
+			hdr = hdu.header
 			comments = hdr.comments
-			print (f'\tnumber of HDU in FITS file:{len(hdus)}')
+			logging.debug (f'\tnumber of HDU in FITS file:{len(hdus)}')
 			if args.metadata :
 				print (f'\theader of HDU #{args.hdu+1}:')
 				for key in hdr :
@@ -444,10 +439,11 @@ def main () :
 				plt.xlabel (hdr['CUNIT1'])
 			if 'CUNIT2' in hdr :
 				plt.ylabel (hdr['CUNIT2'])
-			show_hdu (hdus[args.hdu],aspect='auto',colourbar=(not args.nobar), \
+
+			show_hdu (hdu,aspect=None,colourbar=(not args.nobar), \
 							vmin=args.zmin,vmax=args.zmax)
 			if args.labeled :
-				tracer = SpectrumTracer (hdus[args.hdu])
+				tracer = SpectrumTracer (hdu)
 				tracer.plot_traces (title=infile, width=args.width, outfile=outfile)
 			if outfile is None :
 				plt.show()

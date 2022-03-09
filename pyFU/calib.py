@@ -9,11 +9,10 @@ import numpy as np
 import os, sys
 
 from astropy.io    import fits
+from scipy.ndimage import median_filter
 from pyFU.utils    import check_directories, construct_new_path, get_sec, get_list_of_paths_and_filenames, get_infiles_and_outfiles, vector2Table, is_number
 from pyFU.defaults import pyFU_default_keywords
 
-# from pyFU.defaults import pyFU_logging_level, pyFU_logging_format
-# logging.basicConfig (level=pyFU_logging_level,format=pyFU_logging_format)
 
 class SimplePipeline (object) :
 	"""
@@ -56,29 +55,24 @@ class SimplePipeline (object) :
 		b = 0
 		raw = hdu.data
 		hdr = hdu.header
-		if 'biassec' in self.keywords :
-			keyw = self.keywords['biassec'][0]
-		else :
-			keyw = 'BIASSEC'
-		try :
-			t = hdr[keyw]
-		except KeyError as e :
-			logging.error ('unable to access keyword '+keyw)
 
 		if biassec is not None :
-			if isinstance(biassec,bool) and biassec :
-				if keyw not in hdr :
-					logging.error ('no {keyw} key in FITS header')
-				else :
-					y1,y2,x1,x2 = get_sec (hdr,key=keyw)
-					b = np.nanmedian(raw[y1:y2, x1:x2])
+			if isinstance(biassec,bool) :
+				if biassec :
+					if 'biassec' in self.keywords :
+						keyw = self.keywords['biassec'][0]
+					else :
+						keyw = 'BIASSEC'
+					if keyw not in hdr :
+						logging.error ('no {keyw} key in FITS header')
+					else :
+						y1,y2,x1,x2 = get_sec (hdr,key=keyw)
+						b = np.nanmedian(raw[y1:y2, x1:x2])
 			elif isinstance(biassec,list) and len(biassec) == 4 :
 				y1,y2,x1,x2 = biassec	# numpy RANGE COORDINATES
 				b = np.nanmedian(raw[y1:y2, x1:x2])
 			else :
-				logging.error (f'cannot deterimine biassec from {biassec}')
-			s = f'... biassec=<data[{y1}:{y2}, {x1}:{x2}]>={b}'
-			logging.debug (s)
+				logging.error (f'cannot determine biassec from {biassec}')
 		return b
 
 	def bias_subtraction (self, hdu, biassec=None, bias=None) :
@@ -285,7 +279,7 @@ class SimplePipeline (object) :
 
 			# SUBTRACT BIAS
 			if subtract_bias :
-				raw,bs = self.bias_subtraction (hdu,biassec=biassec,bias=bias)	# RETURNS biassec
+				unbiased,bs = self.bias_subtraction (hdu,biassec=biassec,bias=bias)	# RETURNS biassec
 
 			# GET EXPOSURE TIME
 			t = self.get_exposure_time (hdr,millisec=millisec)
@@ -312,14 +306,16 @@ class SimplePipeline (object) :
 			logging.info ('...'+s)
 
 			# CALIBRATE
-			cal = raw-d*t
+			cal = unbiased-d*t	# (RAW-BIAS)-UNITDARK*EXPTIME
+			calnorm = np.nanmedian(cal)
 
 			# NORMALIZE
-			data[i,:,:] = cal/np.median(cal)
+			data[i] = cal/calnorm
+
 			hdus.close()
 
 		# GET THE UNIT MEDIAN FLATFIELD
-		self.master_flat = np.median (data,axis=0)
+		self.master_flat = np.nanmedian (data,axis=0)
 		med,std = np.nanmedian(self.master_flat),np.nanstd(self.master_flat)
 		logging.info (f'master flat: median={med:.2f}, std={std:.2f}')
 
@@ -333,16 +329,18 @@ class SimplePipeline (object) :
 		# SAVE?
 		if outfile is not None :
 			logging.info (f'writing master flat to {outfile} ...')
-			fits.PrimaryHDU (data=self.master_flat)
+			hdu = fits.PrimaryHDU (data=self.master_flat)
 			hdr = hdu.header
 			hdr['comment'] = f'median of {len(imagelist)} normalized flats'
 			hdr.extend (header,update=False)
 			if not check_directories (outfile,create=True) :
 				logging.error ('cannot create output file!')
 			else :
-				hdu.writeto (outfile,overwrite=True)
-
-		return self.unit_dark
+				try :
+					hdu.writeto (outfile,overwrite=True)
+				except e :
+					logging.error (f'cannot writeto {outfile}: {str(e)}')
+		return self.master_flat
 
 	def calibrate (self, hdu, bias=None, unitdark=None, flat=None, subtract_bias=False, biassec=None, \
 						subtract_dark=False, divide_flat=False, show=False, millisec=False, hdu0=0) :
@@ -462,6 +460,8 @@ class SimplePipeline (object) :
 			data3 = np.nanmedian (data2)
 		elif file1 is None and oper == 'sqrt' :
 			data3 = np.sqrt (data2)
+		elif file1 is None and oper == 'flatten' :
+			data3 = data2/median_filter (data2, size=50)
 		elif file1 is None and oper == 'xmean' :
 			data3 = np.nanmean (data2,axis=0)
 		elif file1 is None and oper == 'ymean' :
@@ -482,7 +482,7 @@ class SimplePipeline (object) :
 			hdu.header['comment'] = f'data: {oper} {thing2}'
 			return hdu
 		else :
-			logging.warning ('should not be able to get here!')
+			logging.error ('should not be able to get here!')
 			return None
 
 def main () :
@@ -506,12 +506,12 @@ def main () :
 			'default':False, 'flg':'-Q','type':bool,'help':'divide the input images by the other images/number'},
 		'divide_flat': {'path':'calib:flat:',
 			'default':False, 'flg':'-F','type':bool,'help':'divide image by master flat'},
+		'flatten': {'path':None,
+			'default':False,  'flg':'-J','type':bool,'help':'flatten (for flatfield images)'},
 		'flat_files': {'path':'calib:flat:infiles',
 			'default':None,  'flg':'-3','type':str,'help':'pattern for raw flat pathnames'},
 		'generic': {'path':None,
 			'default':None,  'flg':'-G','type':str,'help':'YAML file for generic calib configuration info'},
-		'start_hdu': {'path':None,
-			'default':0,     'flg':'-0','type':int,'help':'number of starting HDU in input files'},
 		'infiles':    {'path':'calib:',
 			'default':None,  'flg':'-i','type':str,'help':'name of FITS image files to process'},
 		'masterbias': {'path':'calib:bias:',
@@ -522,14 +522,18 @@ def main () :
 			'default':False, 'flg':'-m','type':bool,'help':'EXPTIME is in millisecs'},
 		'minus': {'path':None,
 			'default':False, 'flg':'-M','type':bool,'help':'subtract other images/number from input images'},
-		'times': {'path':None,
-			'default':False, 'flg':'-X','type':bool,'help':'multiply input images by the other images'},
+		'other':   {'path':None,
+			'default':None,  'flg':'-O','type':str,'help':'pathname of other FITS image file'},
+		'outfiles':   {'path':'calib:',
+			'default':None,  'flg':'-o','type':str,'help':'pathname of output FITS image file'},
 	    'plot':      {'path':None,
 			'default':False, 'flg':'-p','type':bool,'help':'plot details'},
 		'plus': {'path':None,
 			'default':False, 'flg':'-P','type':bool,'help':'add other image to the input image'},
 		'raised_by': {'path':None,
 			'default':False, 'flg':'-^','type':bool,'help':'raise the input images by the other images/number'},
+		'start_hdu': {'path':None,
+			'default':0,     'flg':'-0','type':int,'help':'number of starting HDU in input files'},
 		'sqrt_of': {'path':None,
 			'default':False, 'flg':'-R','type':bool,'help':'sqrt of images'},
 		'subtract_bias': {'path':'calib:bias:',
@@ -538,10 +542,8 @@ def main () :
 			'default':False, 'flg':'-D','type':bool,'help':'subtract scaled unit dark from image'},
 		'sum': {'path':None,
 			'default':False, 'flg':'-S','type':bool,'help':'sum all of the input images'},
-		'other':   {'path':None,
-			'default':None,  'flg':'-O','type':str,'help':'pathname of other FITS image file'},
-		'outfiles':   {'path':'calib:',
-			'default':None,  'flg':'-o','type':str,'help':'pathname of output FITS image file'},
+		'times': {'path':None,
+			'default':False, 'flg':'-X','type':bool,'help':'multiply input images by the other images'},
 		'trimsec': {'path':'calib:',
 			'default':None,  'flg':'-T','type':str,'help':'boolean or y1,y2,x1,x2 (numpy range coords)'},
 		'unitdark': {'path':'calib:dark:',
@@ -572,10 +574,6 @@ def main () :
 
 	# ---- GET LISTS OF INPUT AND OUTPUT FILES
 	infiles,outfiles = get_infiles_and_outfiles (args.infiles,args.outfiles)
-	if len(infiles) == 1 :
-		logging.info (f'infile: {infiles[0]}')
-	else :
-		logging.info (f'{args.infiles} infiles')
 
 	# ---- GET SIMPLE PIPELINE OBJECT
 	pipel = SimplePipeline ()
@@ -590,7 +588,7 @@ def main () :
 
 	# ---- SPECIAL FUNCTIONS?
 	special = args.sum or args.average or args.minus or args.plus or args.divide or args.times \
-				or args.sqrt_of or args.xmean or args.ymean or args.raised_by
+				or args.sqrt_of or args.xmean or args.ymean or args.raised_by or args.flatten
 	if special :
 		if args.subtract_bias or args.subtract_dark or args.divide_flat :
 			logging.error ('special functions and bias/dark/flat manipulations do not mix!')
@@ -787,6 +785,7 @@ def main () :
 			if args.divide    : oper = '/'
 			if args.times     : oper = '*'
 			if args.raised_by : oper = '^'
+			print (infiles,outfiles)
 			for infile,outfile in zip((infiles,outfiles)) :
 				logging.info (f'{outfile} = {infile} {oper} {args.other}')
 				hdu = pipel.maths (infile,oper,other_data)
@@ -794,12 +793,13 @@ def main () :
 					hdu.writeto (outfile,overwrite=True)
 
 		# ---- SPECIAL SINGLE-ARGUMENT FUNCTIONS
-		elif (args.xmean or args.ymean or args.sqrt_of or args.abs) \
+		elif (args.xmean or args.ymean or args.sqrt_of or args.abs or args.flatten) \
 					and len(infiles) == len(outfiles) :
 			if args.xmean   : oper = 'xmean'
 			if args.ymean   : oper = 'ymean'
 			if args.sqrt_of : oper = 'sqrt'
 			if args.abs     : oper = 'abs'
+			if args.flatten : oper = 'flatten'
 			for infile,outfile in zip(infiles,outfiles) :
 				logging.info (f'{outfile} = {oper} {infile}')
 				hdu = pipel.maths (None,oper,infile)
