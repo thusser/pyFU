@@ -4,10 +4,12 @@
 # Creates executables from the core pyFU scripts (may have to use sudo!).
 #
 # EDIT THESE PATHS FOR YOUR OS AND PYTHON VERSION
-#PYFUBIN=~/bin
-PYFUBIN=/opt/local/bin
-#PYFUDIR=/opt/local/Library/Frameworks/Python.framework/Versions/3.5/lib/python3.5/site-packages/pyFU
-PYFUDIR=~/Library/python/pyFU/pyFU
+#
+PYFUBIN=~/bin
+#PYFUBIN=/opt/local/bin
+#
+PYFUDIR=./
+#PYFUDIR=~/Library/python/pyFU/pyFU
 #
 rm -f ${PYFUBIN}/ifubb
 rm -f ${PYFUBIN}/ifucal
