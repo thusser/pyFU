@@ -52,6 +52,7 @@ def check_directories (filename, create=True) :
 	If not and "create=True", then they are created.
 	"""
 	dname = os.path.dirname (filename)
+	if dname == '' : return True
 	if not os.path.isdir (dname) :
 		if create :
 			try :
@@ -326,24 +327,32 @@ def get_infiles_and_outfiles (infiles:str,outfiles:str, overwrite=False) -> (lis
 	inlist,outlist  = None,None
 
 	# NO INPUT GIVEN
-	if infiles is None : 
+	if infiles is None and outfiles is None : 
 		return ([],[])
 
 	# COMMA-SEPARATED LISTS
-	if ',' in infiles :
-		inlist = infiles.split(',')
-		outlist = len(inlist)*[None]
-	if outfiles is not None and ',' in outfiles :
-		outlist = outfiles.split(',')
+	if infiles is None :
+		inlist = [None]
+	else :
+		if ',' in infiles :
+			inlist = infiles.split(',')
+		else :
+			inlist = [infiles]
+	if outfiles is None :
+		outlist = [None]
+	else :
+		if ',' in outfiles :
+			outlist = outfiles.split(',')
+		else :
+			outlist = [outfiles]
 
-	# IMPLICIT LIST OF INPUT FILES
-	if '*' in infiles :
+	# IMPLICIT LIST OF INPUT AND/OR OUTPUT FILES
+	if infiles is not None and '*' in infiles :
 		iprefix = infiles[:infiles.index('*')]			# e.g. infiles='in*.fits' --> iprefix=infiles[0:2]='in'
 		isuffix = infiles[infiles.index('*')+1:]		#                             oprefix=infiles[3:]='.fits'
 		inlist = get_list_of_paths_and_filenames (infiles,mode='path')
-		outlist = len(inlist)*[None]
 
-		if outfiles is not None :
+		if outfiles is not None and '*' in outfiles :
 			outlist = []
 			if '*' in outfiles :
 				oprefix = outfiles[:outfiles.index('*')]
@@ -359,20 +368,11 @@ def get_infiles_and_outfiles (infiles:str,outfiles:str, overwrite=False) -> (lis
 				else :
 					logging.warning (f'{infile} changed after get_list_... : former prefix={iprefix} and suffix={isuffix}')
 
-	# SINGLE FILENAMES
-	if inlist is None :
-		inlist = [infiles]
-	if outlist is None :
-		outlist = [outfiles]
-
 	# FINAL CHECK
 	if inlist is None or outlist is None :		# SOMETHING WENT WRONG - NO MATCHES FOR BOTH
 		logging.warning ('could not construct input and/or output file lists')
 		return ([],[])
-	elif len(inlist) != len(outlist) :			# NUMBERS OF FILES DO NOT MATCH
-		logging.warning (f'input file list does not match output file list ({len(inlist)}!={len(outlist)})')
-		return ([],[])
-	elif not overwrite :
+	elif not overwrite and len(inlist) == len(outlist) :
 		for inf,outf in zip(inlist,outlist) :
 			if inf is not None and inf == outf and not overwrite :
 				raise ValueError (f'{inf}={outf} but no overwrite permission!')

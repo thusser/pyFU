@@ -425,7 +425,10 @@ class SpectrumTracer (object) :
 		logging.info ('fitting sigma of slice #{0}...'.format(self.mid_slice))
 		sigma0,showing,detailed = self._fit_profile (self.mid_slice, self.window_max/2., show=showing, details=detailed)
 		vslice = self._vert_slices[self.mid_slice]
-		logging.info ('... sigma={0:.3f} +/- {1:.3f}'.format(sigma0,vslice['err_sigma']))
+		if 'err_sigma' in vslice :
+			logging.info ('... sigma={0:.3f} +/- {1:.3f}'.format(sigma0,vslice['err_sigma']))
+		else :
+			logging.info ('... no fit for slice #{0} !'.format(self.mid_slice))
 
 		# FIT RIGHT SLICES
 		sigma = sigma0
@@ -474,6 +477,7 @@ class SpectrumTracer (object) :
 		if True :
 			try :
 				p,cov = curve_fit (func,x,sigmas,sigma=err_sig,maxfev=10000)
+				print ('p=',p)
 				self._sigma_fits = list(p)
 				pold = p
 
@@ -488,6 +492,7 @@ class SpectrumTracer (object) :
 					logging.info ('re-fitting sigmas...')
 					err_sig[mask] *= 1.+np.abs(badness[mask]-1.)
 					p,cov = curve_fit (func,x,sigmas,sigma=err_sig,maxfev=10000,p0=p)
+					print ('p=',p)
 				self._sigma_fits = list(p)
 			except Exception as e :
 				logging.warning ('fitting sigmas did not converge: {0}'.format(str(e)))
@@ -586,9 +591,9 @@ class SpectrumTracer (object) :
 				return np.nan,False,False
 
 		try :
-			# print ('ysub',ysub)
-			# print ('vsub',vsub)
-			# print ('p0',pars)
+			print ('ysub',ysub)
+			print ('vsub',vsub)
+			print ('p0',pars)
 			pars,cov = curve_fit (self.multigauss,ysub,vsub,p0=pars,maxfev=20000)
 			if sigma is not None :
 				sigma = pars[-1]
@@ -652,7 +657,7 @@ class SpectrumTracer (object) :
 			factors1 = vslice1['sigma_factors']
 		amps1 = vslice1['amps']
 		amp0 = 1.	# np.nanmean(amps1)
-		n1     = len(yavgs1)
+		n1     = len(yavgs1)		# MAXIMUM NUMBER OF POSSIBLE FOUND SPECTRA
 		vslice1['ids'] = range(n1)
 
 		# INITIAL DICTIONARY OF IDENTIFIED SPECTRA
@@ -667,14 +672,14 @@ class SpectrumTracer (object) :
 				}
 
 		# MATCH EVERY VERTICAL SLICE TO THE RIGHT OF MIDSLICE
-		yoffset = n1*[0]
+		yoffset = n1*[0]	# INITIAL OFFSET IS 0
 		for i in range(self.mid_slice+1,nslices) :
 			logging.debug ('slice #{0} with offset {1}'.format(i,yoffset))
 			vslice = self._vert_slices[i]
 			yoffset = self._get_trace (vslice,spectra,-1,yoffset)
 
 		# MATCH EVERY VERTICAL SLICE TO THE LEFT OF MIDSLICE
-		yoffset = n1*[0]
+		yoffset = n1*[0]	# RESET OFFSETS
 		ilast = 0
 		for i in range(self.mid_slice-1,-1,-1) :
 			logging.debug ('slice #{0} with offset {1}'.format(i,yoffset))
@@ -701,16 +706,16 @@ class SpectrumTracer (object) :
 		mask = np.argsort(yavgs)
 		if self._fibres is None or len(self._fibres) == 0 :
 			logging.debug (f'resetting inner fibre list ({n1})')
-			self._fibres = n1*[None]
-		logging.debug (f'fibres: {self._fibres}')
-		for idx in range(1,n1+1) :
+			self._fibres = {}
+		for idx in range(1,n1+1) :		# idx RUNS FROM 1 TO n1
 			d = spectra[mask[idx-1]]
 			d['index'] = idx
 			d['sigma_factor'] = np.median(d['sigma_factors'])
 			fibre = self.get_fibre (idx)
 			if fibre is None :
 				fibre = Fibre(idx=idx, config=self.config)
-				self._fibres[idx-1] = fibre
+				logging.info (f'index {idx}-1 <= 0 or >= {len(self._fibres)} ???') 
+				self._fibres[idx] = fibre
 			fibre.meta = d				# CONTAINS x,y,index,factor
 
 		# FINIS
@@ -725,13 +730,12 @@ class SpectrumTracer (object) :
 		""" Returns the Fibre object with the index (int) or label (str) "idxlabel". """
 		if self._fibres is None :
 			return None
-		for fibre in self._fibres :
+		for idx,fibre in self._fibres.items() :
 			if fibre is None :
 				return None
 			else :
-				i     = fibre.index
 				label = fibre.label
-				if isinstance(idxlabel,int) and i == idxlabel :
+				if isinstance(idxlabel,int) and idx == idxlabel :
 					return fibre
 				elif isinstance(idxlabel,str) and label == idxlabel :
 					return fibre
@@ -1027,7 +1031,7 @@ class SpectrumTracer (object) :
 			return -1
 		else :
 			n = 0
-			for fibre in self._fibres :
+			for idx,fibre in self._fibres.items() :
 				if fibre is not None and fibre.trace_coef is not None and fibre.ampl_coef is not None :
 					n += 1
 			self.number_traces = n
@@ -1223,8 +1227,8 @@ def main () :
 			'flg':'-N','type':int,'help':'number of vertical slices'},
 	    'number_fibres':{'path':'trace:','default':None,
 			'flg':'-n','type':int,'help':'number of IFU fibres'},
-	    'plot':{'path':None,'default':False,
-			'flg':'-p','type':bool,'help':'plot details'},
+	    'plot':{'path':None,'default':None,
+			'flg':'-p','type':str,'help':'matplotlib backend (e.g. MacOSX|TkAgg,..) (default None)'},
 		'sigma_order':{'path':'trace:','default':3,
 			'flg':'-o','type':int,'help':'polynomial order of fit to width variations'},
 		'trace_order':{'path':'trace:','default':5,

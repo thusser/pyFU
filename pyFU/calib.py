@@ -458,8 +458,6 @@ class SimplePipeline (object) :
 			data3 = np.nanmean (data2)
 		elif file1 is None and oper == 'median' :
 			data3 = np.nanmedian (data2)
-		elif file1 is None and oper == 'std' :
-			data3 = np.nanstd (data2)
 		elif file1 is None and oper == 'sqrt' :
 			data3 = np.sqrt (data2)
 		elif file1 is None and oper == 'flatten' :
@@ -536,7 +534,7 @@ def main () :
 			'default':False, 'flg':'-^','type':bool,'help':'raise the input images by the other images/number'},
 		'start_hdu': {'path':None,
 			'default':0,     'flg':'-0','type':int,'help':'number of starting HDU in input files'},
-		'std': {'path':None,
+		'stddev': {'path':None,
 			'default':False, 'flg':'-V','type':bool,'help':'std.dev. of images'},
 		'sqrt_of': {'path':None,
 			'default':False, 'flg':'-R','type':bool,'help':'sqrt of images'},
@@ -591,10 +589,10 @@ def main () :
 	trimsec     = False
 
 	# ---- SPECIAL FUNCTIONS?
-	special = args.sum or args.average \
+	special = args.sum or args.average or args.stddev \
 				or args.minus or args.plus or args.divide or args.times \
 				or args.sqrt_of or args.raised_by or args.flatten \
-				or args.xmean or args.ymean or args.std
+				or args.xmean or args.ymean
 	if special :
 		if args.subtract_bias or args.subtract_dark or args.divide_flat :
 			logging.error ('special functions and bias/dark/flat manipulations do not mix!')
@@ -750,34 +748,46 @@ def main () :
 				outfiles.append (outfile)
 
 	if special :
-		# SIMPLE AVERAGE,SUM OF MULTIPLE FILES
-		if args.sum or args.average :
-			if len(infiles) != 1 and len(outfiles) <= 1 :
-				logging.error ('cannot sum/average {0} images into {1} image'.format(len(outfiles),len(infiles)))
+		# SIMPLE AVERAGE,SUM,STD OF MULTIPLE FILES
+		if args.sum or args.average or args.stddev :
+			if len(infiles) == 1 or len(outfiles) > 1 :
+				logging.error ('cannot sum/average/stddev {0} images into {1} image'.format(len(outfiles),len(infiles)))
 				sys.exit(1)
-			hdu = None
-			for filename in infiles :
-				hdus = fits.open (filename)
-				h  = hdus[args.start_hdu]
-				if hdu is None :
-					hdu = h
-				else :
-					hdu.data += h.data
-					hdu.header['COMMENT'] = f'added {filename}'
+			nz = len(infiles)
+			hdus = fits.open (infiles[0])
+			hdu = hdus[args.start_hdu]
+			shap = hdu.data.shape
+			data = np.zeros((nz,shap[0],shap[1]))
+			data[0] = hdu.data
+			for i in range(1,nz) :
+				filename = infiles[i]
+				hs = fits.open (filename)
+				h = hs[args.start_hdu]
+				data[i] = np.array(h.data)
+				hdu.header['COMMENT'] = f'using {filename}'
+				hdus.close()
+
 			if args.average :
-				hdr.data /= len(infiles)
-				hdu.header['COMMENT'] = f'averaged by /{len(infiles)}'
+				hdu.data = np.nanmean(data,axis=0)
+				hdu.header['COMMENT'] = 'mean of used'
+			elif args.sum :
+				hdu.data = np.nansum(data,axis=0)
+				hdu.header['COMMENT'] = 'sum of used'
+			elif args.stddev :
+				hdu.data = np.nanstd(data,axis=0)
+				hdu.header['COMMENT'] = 'std. dev. of used'
 
 			# ---- PLOT
 			if args.plot and hdu is not None :
 				show_hdu (hdu)
-				plt.title (outfile)
+				plt.title (outfiles[0])
 				plt.show ()
 
 			# ---- SAVE RESULT
-			logging.info (f'writing calibrated image to {outfile}')
+			outfile = outfiles[0]
+			logging.info (f'writing image to {outfile}')
 			if not check_directories (outfile,create=True) :
-				logging.error ('cannot create output file!')
+				logging.error (f'cannot create {outfile}!')
 			else :
 				hdu.writeto (outfile,overwrite=True)
 
@@ -799,11 +809,10 @@ def main () :
 					hdu.writeto (outfile,overwrite=True)
 
 		# ---- SPECIAL SINGLE-ARGUMENT FUNCTIONS
-		elif (args.xmean or args.ymean or args.std or args.sqrt_of or args.abs or args.flatten) \
+		elif (args.xmean or args.ymean or args.sqrt_of or args.abs or args.flatten) \
 					and len(infiles) == len(outfiles) :
 			if args.xmean   : oper = 'xmean'
 			if args.ymean   : oper = 'ymean'
-			if args.std     : oper = 'std'
 			if args.sqrt_of : oper = 'sqrt'
 			if args.abs     : oper = 'abs'
 			if args.flatten : oper = 'flatten'
