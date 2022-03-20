@@ -461,7 +461,7 @@ class SimplePipeline (object) :
 		elif file1 is None and oper == 'sqrt' :
 			data3 = np.sqrt (data2)
 		elif file1 is None and oper == 'flatten' :
-			data3 = data2/median_filter (data2, size=50)
+			data3 = data2/median_filter (data2, size=50, mode='reflect')
 		elif file1 is None and oper == 'xmean' :
 			data3 = np.nanmean (data2,axis=0)
 		elif file1 is None and oper == 'ymean' :
