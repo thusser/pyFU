@@ -389,7 +389,7 @@ Script for converting a set of extracted spectra into a 2-dimensional IFU image.
 		sys.exit(0)
 
 	# ---- GET THE INPUT AND OUTPUT FILES
-	infiles,outfiles = get_infiles_and_outfiles (args.infiles,args.outfiles)
+	infiles,outfiles = get_infiles_and_outfiles (args.infiles,args.outfiles,cfg=info)
 
 	# ---- FOR ALL INPUT AND OUTPUT FILES
 	for infile,outfile in zip(infiles,outfiles) :

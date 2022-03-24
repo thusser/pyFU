@@ -575,7 +575,7 @@ def main () :
 		sys.exit(0)
 
 	# ---- GET LISTS OF INPUT AND OUTPUT FILES
-	infiles,outfiles = get_infiles_and_outfiles (args.infiles,args.outfiles)
+	infiles,outfiles = get_infiles_and_outfiles (args.infiles,args.outfiles,cfg=info)
 
 	# ---- GET SIMPLE PIPELINE OBJECT
 	pipel = SimplePipeline ()

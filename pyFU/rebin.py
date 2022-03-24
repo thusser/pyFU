@@ -75,7 +75,7 @@ def main () :
 		sys.exit(0)
 
 	# ---- GET INPUT AND OUTPUT FILE NAMES
-	infiles,outfiles = get_infiles_and_outfiles (args.infiles,args.outfiles)
+	infiles,outfiles = get_infiles_and_outfiles (args.infiles,args.outfiles,cfg=info)
 
 	# ---- GET OUTPUT WAVELENGTHS VIA REFERENCE SPECTRUM OR NUMBER OF PIXELS, RANGE, AND/OR OUTPUT DISPERSION
 	if 'reference' in info and info['reference'] is not None :

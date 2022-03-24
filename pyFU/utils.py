@@ -312,7 +312,7 @@ def get_list_of_paths_and_filenames (path_pattern, mode='both') :
 	# RETURN LIST OF FULL PATHS AND FILENAMES THAT MATCH
 	return files
 
-def get_infiles_and_outfiles (infiles:str,outfiles:str, overwrite=False) -> (list,list) :
+def get_infiles_and_outfiles (infiles:str,outfiles:str, cfg=None, overwrite=False) -> (list,list) :
 	"""
 	Intelligently construct lists of input and output files.
 	The accepted formats for "infiles" and "outfiles" are
@@ -323,11 +323,26 @@ def get_infiles_and_outfiles (infiles:str,outfiles:str, overwrite=False) -> (lis
 	If "infiles" contains "*", then the individual content of "*" in an input file is transferred
 	to the corresponding output file, e.g. infiles="in_*.fits" and outfiles="out_*.fits" implies
 	that "in_0001.fits" will be transformed to "out_0001.fits".
+
+	if "infiles" or "outfiles" is None, then look for these keywords in the configuration
+	dictionary "cfg".
 	"""
 	inlist,outlist  = None,None
 
-	# NO INPUT GIVEN
-	if infiles is None and outfiles is None : 
+	# NO INPUT GIVEN - MAYBE IN THE CONFIGURATION FILE?
+	if infiles is None :
+		if cfg is not None :
+			if 'infiles' in cfg :
+				infiles = cfg['infiles']
+			elif 'infile' in cfg :
+				infiles = cfg['infile']
+	if outfiles is None :
+		if cfg is not None :
+			if 'outfiles' in cfg :
+				outfiles = cfg['outfiles']
+			elif 'outfile' in cfg :
+				outfiles = cfg['outfile']
+	if infiles is None and outfiles is None :
 		return ([],[])
 
 	# COMMA-SEPARATED LISTS

@@ -232,7 +232,7 @@ and a set of extracted lamp spectra.
 		sys.exit(0)
 
 	# ---- GET INPUT AND OUTPUT FILES
-	infiles,outfiles = get_infiles_and_outfiles (args.infiles,args.outfiles)
+	infiles,outfiles = get_infiles_and_outfiles (args.infiles,args.outfiles,cfg=info)
 
 	# ---- CHECK FOR WAVELENGTH TABLE
 	if 'wavetable' not in info or info['wavetable'] is None :

@@ -74,7 +74,7 @@ coming from the command line, a YAML file, and any defaults.
 	logging.info (f'{args.nix} = {cfg["nix"]}')
 
 	# ---- GET INPUT AND OUTPUT FILE NAMES SO THAT WE COULD ACTUALLY DO SOMETHING
-	infiles,outfiles = get_infiles_and_outfiles (args.infiles,args.outfiles)
+	infiles,outfiles = get_infiles_and_outfiles (args.infiles,args.outfiles,cfg=info)
 
 	# ---- GET OBJECT THAT PARSES INTERNAL DEFAULT VALUES AND EXTERNAL CONFIGURATIONS
 	knochen = bones(info)

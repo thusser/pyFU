@@ -297,11 +297,11 @@ def main () :
 		'idxcol':{'path':'extract:','default':'index', \
 					'flg':'-I','type':str,'help':'name of index table column'},
 		'infiles':{'path':'extract:','default':None, \
-					'flg':'-i','type':str,'help':'input FITS file names (default ./spectra/test.fits)'},
+					'flg':'-i','type':str,'help':'input FITS file names (default None)'},
 		'keywords':{'path':None,'default':None, \
 					'flg':'-K','type':str,'help':'YAML configuation file for FITS keywords'},
 		'outfiles':{'path':'extract:','default':None, \
-					'flg':'-o','type':str,'help':'output FITS file names (default ./TEST/test.fits)'},
+					'flg':'-o','type':str,'help':'output FITS file names (default None)'},
 		'pixcol':{'path':'extract:','default':'pixel', \
 					'flg':'-P','type':str,'help':'name of pixel table column'},
 		'plot':{'path':None,'default':False, \
@@ -346,7 +346,7 @@ def main () :
 		merge_dictionaries (cfg,tracecfg)
 
 	# ---- GET INPUT AND OUTPUT FILE NAMES
-	infiles,outfiles = get_infiles_and_outfiles (args.infiles,args.outfiles)
+	infiles,outfiles = get_infiles_and_outfiles (args.infiles,args.outfiles,cfg=info)
 
 	# ---- FOR ALL INPUT FILES
 	for infile,outfile in zip(infiles,outfiles) :

@@ -393,11 +393,18 @@ def main () :
 		help='display int width of given extraction band (default None)')
 	parser.add_argument ('--yaml','-y',default=None,
 		help='path of yaml configuration file (default None)')
-	parser.add_argument ('--zmax','-Z',default=None,
+	parser.add_argument ('--zmax','-Z',type=float,default=None,
 		help='upper displayed value')
-	parser.add_argument ('--zmin','-z',default=None,
+	parser.add_argument ('--zmin','-z',type=float,default=None,
 		help='lower displayed value')
+	parser.add_argument ('--zrange','-R',default=None,
+		help='lower,upper displayed values')
 	args = parser.parse_args ()
+
+	if args.zrange is not None :
+		zz = args.zrange.split(',')
+		args.zmin = float(zz[0])
+		args.zmax = float(zz[1])
 
 	# ---- INTIALIZE LOGGING
 	initialize_logging (config_file=args.yaml)

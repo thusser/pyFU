@@ -793,7 +793,7 @@ wavelength calibration so that the regions to be cross-correlated are reasonably
 	logging.info ('*************************** wavcal ******************************')
 
 	# ---- GET INPUT AND OUTPUT FILE NAMES
-	infiles,outfiles = get_infiles_and_outfiles (args.infiles,args.outfiles)
+	infiles,outfiles = get_infiles_and_outfiles (args.infiles,args.outfiles,cfg=info)
 	if 'in_format' not in info :
 		info['in_format'] = None
 
