@@ -16,7 +16,7 @@ import matplotlib as mpl
 import logging
 import yaml
 
-from utils      import centroid1D, find_peaks, show_hdu
+from .utils      import centroid1D, find_peaks, show_hdu
 from astropy.io import fits
 from matplotlib import pyplot as plt
 

@@ -11,7 +11,7 @@ import logging
 import numpy as np
 import matplotlib.pyplot as plt
 
-from utils         import get_image_limits, show_hdu
+from .utils         import get_image_limits, show_hdu
 from astropy.io    import fits
 
 from pyFU.defaults import pyFU_default_formats, pyFU_default_keywords
