@@ -1,0 +1,36 @@
+[tool.poetry]
+name = "pyFU"
+packages = [{ include = "pyFU" }]
+version = "0.1.0"
+description = ""
+authors = ["Frederiv V. Hessman", "Tim-Oliver Husser <thusser@uni-goettingen.de>"]
+
+[tool.poetry.dependencies]
+python = ">=3.9,<3.11"
+astropy = "^5.0.4"
+matplotlib = "^3.5.1"
+numpy = "^1.22.3"
+parse = "^1.19.0"
+scipy = "^1.8.0"
+scikit-image = "^0.19.2"
+PyQt5 = "^5.15.6"
+
+[tool.poetry.dev-dependencies]
+
+[tool.poetry.scripts]
+ifubb = "pyFU.barebones:main"
+ifucal = "pyFU.calib:main"
+ifudis = "pyFU.display:main"
+ifuext = "pyFU.extract:main"
+ifufak = "pyFU.fake:main"
+ifuima = "pyFU.image:main"
+ifulam = "pyFU.lamp:main"
+ifureb = "pyFU.rebin:main"
+ifusol = "pyFU.solar:main"
+ifutra = "pyFU.trace:main"
+ifuwav = "pyFU.wavcal:main"
+ifutool = "pyFU.pyfu_tool:main"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

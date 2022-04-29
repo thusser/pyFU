@@ -1,9 +1,0 @@
-argparse
-astropy
-bisect
-matplotlib
-numpy
-parse
-scipy
-skimage
-yaml
