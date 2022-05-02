@@ -144,7 +144,6 @@ class SpectrumTracer (object) :
 		# ---- TRACE INFO
 		if config is not None and 'trace' in config :
 			info = config['trace']
-			# print ('final configuration:',info)
 
 			# ... GET NUMBER OF TRACES
 			# if self.number_traces is None and 'number_traces' in info :
@@ -477,7 +476,6 @@ class SpectrumTracer (object) :
 		if True :
 			try :
 				p,cov = curve_fit (func,x,sigmas,sigma=err_sig,maxfev=10000)
-				print ('p=',p)
 				self._sigma_fits = list(p)
 				pold = p
 
@@ -492,7 +490,6 @@ class SpectrumTracer (object) :
 					logging.info ('re-fitting sigmas...')
 					err_sig[mask] *= 1.+np.abs(badness[mask]-1.)
 					p,cov = curve_fit (func,x,sigmas,sigma=err_sig,maxfev=10000,p0=p)
-					print ('p=',p)
 				self._sigma_fits = list(p)
 			except Exception as e :
 				logging.warning ('fitting sigmas did not converge: {0}'.format(str(e)))
@@ -591,9 +588,6 @@ class SpectrumTracer (object) :
 				return np.nan,False,False
 
 		try :
-			print ('ysub',ysub)
-			print ('vsub',vsub)
-			print ('p0',pars)
 			pars,cov = curve_fit (self.multigauss,ysub,vsub,p0=pars,maxfev=20000)
 			if sigma is not None :
 				sigma = pars[-1]
@@ -1275,7 +1269,6 @@ def main () :
 	hdu = hdus[0]
 
 	# ---- GET TRACER
-	# print (cfg)
 	tracer = SpectrumTracer (hdu, config=cfg, ignore=args.ignore)
 
 	# ---- GET EXTERNAL CSV FILE WITH VERTICAL SLICE POSITIONS
