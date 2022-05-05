@@ -485,7 +485,7 @@ def get_fibres (config=None, header=None, keywords=pyFU_default_keywords, format
 	Get a list of pyFU fibre objects derived from a pyFU configuration or a full set
 	of parameters stored in the FITS header of a traced spectral image.
 	"""
-	fibres = []
+	fibres = {}
 	n = 0
 
 	# PARSE HEADER FOR UPDATED CONFIGURATION
@@ -509,9 +509,9 @@ def get_fibres (config=None, header=None, keywords=pyFU_default_keywords, format
 
 	# GET FIBRES USING RE-CONSTRUCTED CONFIGURATION DICTIONARY ONLY
 	# SINCE THE FITS HEADER SHOULD HAVE BEEN MERGED INTO IT
-	for idx in range(1,n+1) :
+	for idx in range(1,n+1) :	# 1 <= idx <= n
 		fibre = Fibre (idx=idx, config=cfg, keywords=keywords, formats=formats)
-		fibres.append(fibre)
+		fibres[idx] = fibre
 		logging.info ('got fibre '+str(fibre))
 	logging.info ('retrieved {0} fibres from config'.format(n))
 	return fibres
