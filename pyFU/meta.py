@@ -1,6 +1,6 @@
 # pyFU/meta.py
 
-"""
+fibre_ = """
 The present metadata structure (e.g. YAML files, configuration dictionaries) for the
 most important entries is :
 
@@ -85,7 +85,6 @@ config :
 	ypos : ()					# USED FOR SINGLE FIBRE
 
 """
-
 
 import logging
 import numpy as np
