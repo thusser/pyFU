@@ -1490,16 +1490,10 @@ def parse_arguments(arguments, readme=None, config=None, parser=None, verbose=Fa
                 print("\n\tcontextual value", loc[key])
 
         # NO argparse, YAML, OR COMMAND-LINE CONTENT: USE DEFAULT
-        content = adict[arg]
-        if verbose:
-            print(
-                "adict[", arg, "]=", content, ": is", arg, "in final level?", arg in loc
-            )
-        if content is None:
-            if key not in loc:
-                content = udict["default"]
-            else:
-                content = loc[key]
+        if arg not in loc:
+            content = udict["default"]
+        else:
+            content = loc[key]
 
         # CONVERT LISTS FROM str TO int OR float OR LIST OF LISTS
         if (
