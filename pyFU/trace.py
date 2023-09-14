@@ -16,7 +16,7 @@ import matplotlib as mpl
 import logging
 import yaml
 
-from .utils import centroid1D, find_peaks, show_hdu
+from pyFU.utils import centroid1D, find_peaks, show_hdu
 from astropy.io import fits
 from matplotlib import pyplot as plt
 
@@ -413,7 +413,9 @@ class SpectrumTracer(object):
         amp = p[ng : 2 * ng + 1]
 
         # GET SIGMA
-        if n % ng == 1:
+        if (
+            n % ng == 1 or n == 3
+        ):  # n==3 corresponds to a single fibre and optional sigma
             sigma = p[-1]
         elif self._sigma_fits is None:
             raise ValueError("multiguass: no sigma_fits available!")
@@ -863,7 +865,7 @@ class SpectrumTracer(object):
         """Returns the Fibre object with the index (int) or label (str) "idxlabel"."""
         if self._fibres is None:
             return None
-        for idx, fibre in self._fibres.items():
+        for idx, fibre in enumerate(self._fibres):  # self._fibres.items():
             if fibre is None:
                 return None
             else:
@@ -1196,7 +1198,7 @@ class SpectrumTracer(object):
             return -1
         else:
             n = 0
-            for idx, fibre in self._fibres.items():
+            for idx, fibre in enumerate(self._fibres):  # self._fibres.items():
                 if (
                     fibre is not None
                     and fibre.trace_coef is not None

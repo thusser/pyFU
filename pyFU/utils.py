@@ -1431,6 +1431,8 @@ def parse_arguments(arguments, readme=None, config=None, parser=None, verbose=Fa
     args = parser.parse_args()
 
     # ---- UPDATE DICTIONARY WITH YAML FILE FOR USER DEFAULTS
+    print('Config before yaml')
+    print(config)
     if "yaml" in arguments and args.yaml is not None:
         with open(args.yaml) as stream:
             d = yaml.safe_load(stream)
@@ -1439,6 +1441,10 @@ def parse_arguments(arguments, readme=None, config=None, parser=None, verbose=Fa
         merge_dictionaries(config, d)  # ONLY ADDS NEW ENTRIES FROM d
         if verbose:
             print("\nparse_arguments:\n", config)
+    print('yaml content')
+    print(d)
+    print('Config after yaml')
+    print(config)
 
     # ---- UPDATE CONFIGURATION WITH COMMAND LINE INPUT
     adict = args.__dict__  # DICTIONARY OF ARGUMENTS FROM argparse (WITH ALL KEYS!)
@@ -1518,6 +1524,9 @@ def parse_arguments(arguments, readme=None, config=None, parser=None, verbose=Fa
         if verbose:
             print("\nadding ", content, "\n\tto", key)
         loc[key] = content
+
+    print('Final Config')
+    print(config)
 
     # ---- RESULTS
     if verbose:

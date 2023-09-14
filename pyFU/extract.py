@@ -164,10 +164,9 @@ class SpectrumExtractor(object):
         if ns <= 0:
             raise ValueError("no traced spectra!")
         spectra = []
-        last_fibre = None
         fibre = None
-        next_fibre = self.tracer.get_fibre(1)
-        for idx in range(1, ns + 1):
+        next_fibre = self.tracer.get_fibre(0)
+        for idx in range(0, ns):
             hdr = {}
 
             # ... GET NEIGHBORING FIBRES

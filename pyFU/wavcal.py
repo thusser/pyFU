@@ -1048,7 +1048,7 @@ wavelength calibration so that the regions to be cross-correlated are reasonably
         sys.exit(1)
 
     # ---- FOR ALL TABLES
-    for infile, outfile in zap(infiles, outfiles):
+    for infile, outfile in zip(infiles, outfiles):
         spectra, header = read_tables(pathname=infile)
         if len(spectra) == 0:
             logging.critical(f"no spectra read from {infile}")
