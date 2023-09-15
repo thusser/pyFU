@@ -842,8 +842,8 @@ class SpectrumTracer(object):
         if self._fibres is None or len(self._fibres) == 0:
             logging.debug(f"resetting inner fibre list ({n1})")
             self._fibres = {}
-        for idx in range(1, n1 + 1):  # idx RUNS FROM 1 TO n1
-            d = spectra[mask[idx - 1]]
+        for idx in range(0, n1):  # idx RUNS FROM 1 TO n1
+            d = spectra[mask[idx]]
             d["index"] = idx
             d["sigma_factor"] = np.median(d["sigma_factors"])
             fibre = self.get_fibre(idx)
@@ -948,7 +948,7 @@ class SpectrumTracer(object):
         showing = show
 
         # FOR EACH POTENTIALLY IDENTIFIED SPECTRUM
-        for idx in range(1, nf + 1):
+        for idx in range(0, nf):
             fibre = self.get_fibre(idx)
             d = fibre.meta
             if d is not None:
@@ -1072,7 +1072,7 @@ class SpectrumTracer(object):
         nf = self.number_traces
         n = 0
 
-        for idx in range(1, nf + 1):
+        for idx in range(0, nf):
             fibre = self.get_fibre(idx)
             pt = fibre.trace_coef
             mt = len(pt)
