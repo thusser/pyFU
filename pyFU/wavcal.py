@@ -235,6 +235,7 @@ def cc_calibrate(
     flux_order=None,
     flux_func="laguerre",
     wave_ranges=None,
+    fix_mu=False,
 ):
     """
     Computes a wavelength calibration for a spectrum defined by arrays 'wav' and
@@ -363,17 +364,31 @@ def cc_calibrate(
             errfcorr = 0.1 * corr
             try:
                 # FIT GAUSSIAN TO C-C FUNCTION: ycorr ~ a+b*exp(-(xcorr-c)**2/d**2)
-                p0 = [0.05 * peak, np.max(ycorr), peak, wid / 2.0]
-                p, cov = optimize.curve_fit(Gaussian1D, xcorr, ycorr, p0=p0)
-                rms2 = np.nansum((ycorr - Gaussian1D(xcorr, *p)) ** 2) / len(xcorr)
-                peak = p[2]
-                wid = p[3]
-                errpeak = np.sqrt(cov[2][2] + 0.01 * wid**2)
-                rrfcorr = corr * np.sqrt(cov[1][1] + rms2) / snorm
-                if showing:
-                    plt.plot(
-                        xcorr, Gaussian1D(xcorr, *p), "-.", label="fit", color="blue"
-                    )
+                if fix_mu:
+                    # Gaussian1D with fixed mu (µ), since the latter is known by CC-argmax (lmeerwart, 10th May '23)
+                    peak = xcorr[np.argmax(ycorr)]
+                    def gauss_fit(x, off, ampl, sigma):
+                        return Gaussian1D(x, off, ampl, peak, sigma)
+
+                    p0 = [0.05 * peak, np.max(ycorr), wid / 2.0]
+                    p, cov = optimize.curve_fit(gauss_fit, xcorr, ycorr, p0=p0)
+                    wid = p[2]
+                    if showing:
+                        plt.plot(
+                            xcorr, gauss_fit(xcorr, *p), "-.", label="fit", color="blue"
+                        )
+                else:
+                    p0 = [0.05 * peak, np.max(ycorr), peak, wid / 2.0]
+                    p, cov = optimize.curve_fit(Gaussian1D, xcorr, ycorr, p0=p0)
+                    rms2 = np.nansum((ycorr - Gaussian1D(xcorr, *p)) ** 2) / len(xcorr)
+                    peak = p[2]
+                    wid = p[3]
+                    errpeak = np.sqrt(cov[2][2] + 0.01 * wid ** 2)
+                    rrfcorr = corr * np.sqrt(cov[1][1] + rms2) / snorm
+                    if showing:
+                        plt.plot(
+                            xcorr, Gaussian1D(xcorr, *p), "-.", label="fit", color="blue"
+                        )
             except:
                 peak = np.nan
 
@@ -633,6 +648,7 @@ def cc_calibrate_spectra(
     flux_order=None,
     flux_func="laguerre",
     wave_ranges=None,
+    fix_mu=False,
     prompt=False,
 ) -> bool:
     """
@@ -681,6 +697,7 @@ def cc_calibrate_spectra(
             flux_order=flux_order,
             flux_func=flux_func,
             wave_ranges=wave_ranges,
+            fix_mu=fix_mu
         )
         pcoef, pcov, pchi2, prms = px2wv
         if pcoef is None:
@@ -1004,6 +1021,13 @@ wavelength calibration so that the regions to be cross-correlated are reasonably
             "type": int,
             "help": "size of cross-correlation centroid window [pix]",
         },
+        "fix_mu": {
+            "path": "wavcal:",
+            "default": False,
+            "flg": "-MU",
+            "type": bool,
+            "help": "whether to fix mu to CC-peak and therefore only fit peak width",
+        },
         "yaml": {
             "path": None,
             "default": None,
@@ -1086,6 +1110,7 @@ wavelength calibration so that the regions to be cross-correlated are reasonably
                 flux_order=info["flux_order"],
                 flux_func=info["flux_function"],
                 wave_ranges=info["wave_ranges"],
+                fix_mu=info["fix_mu"],
                 prompt=cfg["pause"],
             ):
                 logging.error("ABORTED wavelength calibration!")
