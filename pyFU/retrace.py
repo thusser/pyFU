@@ -808,7 +808,7 @@ class SpectrumRetracer(object):
 
         # SORT THE INDICES BY y VALUES
         mask = np.argsort(yavgs)
-        for idx in range(1, n1 + 1):
+        for idx in range(0, n1):
             d = spectra[mask[idx - 1]]
             d["index"] = idx
             d["sigma_factor"] = np.median(d["sigma_factors"])
@@ -911,7 +911,7 @@ class SpectrumRetracer(object):
         showing = show
 
         # FOR EACH POTENTIALLY IDENTIFIED SPECTRUM
-        for idx in range(1, nf + 1):
+        for idx in range(0, nf):
             fibre = self.get_fibre(idx)
             d = fibre.meta
             if d is not None:
@@ -1009,7 +1009,7 @@ class SpectrumRetracer(object):
         nf = self.number_traces
         n = 0
 
-        for idx in range(1, nf + 1):
+        for idx in range(0, nf):
             fibre = self.get_fibre(idx)
             pt = fibre.trace_coef
             mt = len(pt)
@@ -1218,7 +1218,7 @@ class SpectrumRetracer(object):
                 logging.error("nothing to plot!")
                 return False
             ic = 0
-            for idx in range(1, self.number_traces + 1):
+            for idx in range(0, self.number_traces):
                 fibre = self.get_fibre(idx)
                 if fibre is None:
                     logging.error("cannot access trace #{0}".format(idx))
@@ -1250,7 +1250,7 @@ class SpectrumRetracer(object):
                 logging.error("nothing to plot!")
                 return False
             ic = 0
-            for idx in range(1, self.number_traces + 1):
+            for idx in range(0, self.number_traces):
                 fibre = self.get_fibre(idx)
                 if fibre is None:
                     logging.error("cannot access trace #{0}".format(idx))

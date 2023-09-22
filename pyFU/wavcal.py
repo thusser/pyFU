@@ -167,7 +167,6 @@ def _invert_cubic(pix, p):
     w2 = np.nan
     w3 = np.nan
     third = 1.0 / 3.0
-    d -= x
     if a == 0.0:
         return _invert_quadratic(x, b, c, d)
     w1 = np.nan
@@ -274,7 +273,7 @@ def cc_calibrate(
             fit_val = legval
         elif flxfnc.startswith("her"):
             fit_func = hermfit
-            fit_val = hermvals
+            fit_val = hermval
         else:
             fit_func = polyfit
             fit_val = polyval

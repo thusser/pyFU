@@ -5,26 +5,14 @@ Objects for managing IFU fibres and their spectra.
 """
 
 import numpy as np
-import sys
 import logging
-
-from astropy.io import fits
-from astropy.table import Table, Column
-from astropy.wcs import WCS
-
-from matplotlib import pyplot as plt, cm as colourmaps
-from matplotlib.colors import Normalize
-from matplotlib.colorbar import ColorbarBase
 
 from pyFU.defaults import (
     pyFU_default_formats,
     pyFU_default_keywords,
-    pyFU_logging_level,
-    pyFU_logging_format,
 )
 from pyFU.meta import header2config
 from pyFU.utils import (
-    hist_integral,
     merge_dictionaries,
     polynomial_functions,
     multiple_gauss_function,
@@ -553,7 +541,7 @@ def get_fibres(
 
     # GET FIBRES USING RE-CONSTRUCTED CONFIGURATION DICTIONARY ONLY
     # SINCE THE FITS HEADER SHOULD HAVE BEEN MERGED INTO IT
-    for idx in range(1, n + 1):
+    for idx in range(0, n):
         fibre = Fibre(idx=idx, config=cfg, keywords=keywords, formats=formats)
         fibres.append(fibre)
         logging.info("got fibre " + str(fibre))

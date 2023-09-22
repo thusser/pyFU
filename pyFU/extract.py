@@ -503,12 +503,15 @@ def main():
 
         # ---- PLOT RESULTS
         if args.plot:
+            plt.figure()
             for i in range(len(spectra) - 1, -1, -1):
                 s = spectra[i]
                 x = s[info["pixcol"]].data
                 f = s[info["flxcol"]].data + i * shift
                 e = s[info["errcol"]].data
                 lab = "#{0}".format(i + 1)
+                fibre = tracer.get_fibre(i)
+                lab = fibre.label
                 plt.errorbar(x, f, yerr=e, fmt="-", label=lab)
             plt.xlabel("x [pix]")
             plt.ylabel("flux [ADU] + constant")

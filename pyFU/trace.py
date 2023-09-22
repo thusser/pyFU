@@ -707,9 +707,6 @@ class SpectrumTracer(object):
                 return np.nan, False, False
 
         try:
-            print("ysub", ysub)
-            print("vsub", vsub)
-            print("p0", pars)
             pars, cov = curve_fit(self.multigauss, ysub, vsub, p0=pars, maxfev=20000)
             if sigma is not None:
                 sigma = pars[-1]
@@ -842,6 +839,9 @@ class SpectrumTracer(object):
         if self._fibres is None or len(self._fibres) == 0:
             logging.debug(f"resetting inner fibre list ({n1})")
             self._fibres = {}
+        print(self.get_fibre(0).label, self.get_fibre(0))
+        print(self.get_fibre(1).label, self.get_fibre(1))
+        print(self.get_fibre(2).label, self.get_fibre(2))
         for idx in range(0, n1):  # idx RUNS FROM 1 TO n1
             d = spectra[mask[idx]]
             d["index"] = idx
@@ -1299,7 +1299,7 @@ class SpectrumTracer(object):
                 logging.error("nothing to plot!")
                 return False
             ic = 0
-            for idx in range(1, self.number_traces + 1):
+            for idx in range(0, self.number_traces):
                 fibre = self.get_fibre(idx)
                 if fibre is None:
                     logging.error("cannot access trace #{0}".format(idx))
@@ -1335,7 +1335,7 @@ class SpectrumTracer(object):
                 logging.error("nothing to plot!")
                 return False
             ic = 0
-            for idx in range(1, self.number_traces + 1):
+            for idx in range(0, self.number_traces):
                 fibre = self.get_fibre(idx)
                 if fibre is None:
                     logging.error("cannot access trace #{0}".format(idx))
@@ -1603,6 +1603,11 @@ def main():
     # ---- GET TRACER
     # print (cfg)
     tracer = SpectrumTracer(hdu, config=cfg, ignore=args.ignore)
+
+    # ---- PLOT HDU IMAGE AND HORIZONTAL TRACES
+    if args.plot:
+        logging.info("Plotting traces...")
+        tracer.plot_traces(show_data=True, kappa=0.5)
 
     # ---- GET EXTERNAL CSV FILE WITH VERTICAL SLICE POSITIONS
     if args.slices is not None:
