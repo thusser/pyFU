@@ -1082,6 +1082,7 @@ def read_tables(pathname=None, fmt=None):
     returns a list of tables and the primary HDU header, if available.
     """
     tables = []
+    headers = []
     header = None
 
     if fmt is not None:
@@ -1112,12 +1113,14 @@ def read_tables(pathname=None, fmt=None):
                     t = Table.read(hdus, hdu=i)
                     t.meta["FILENAME"] = name + "#{0}".format(i)
                     tables.append(t)
+                    headers.append(header)
                 # 1-D "IMAGE"
                 elif "NAXIS1" in hdr:
                     t = vector2Table(hdu)
                     if t is not None:
                         t.meta["FILENAME"] = name
                         tables.append(t)
+                        headers.append(header)
 
         # READ CONGLOMERATED TABLE
         elif fmt is None:
@@ -1149,9 +1152,10 @@ def read_tables(pathname=None, fmt=None):
             if "FILENAME" not in t.meta:
                 t.meta["FILENAME"] = f
             tables.append(t)
+            headers.append(header)
 
     # RETURN RESULT
-    return tables, header
+    return tables, headers
 
 
 def get_image_limits(hdu, mode="number"):

@@ -649,6 +649,7 @@ def cc_calibrate_spectra(
     wave_ranges=None,
     fix_mu=False,
     prompt=False,
+    headers=None,
 ) -> bool:
     """
     Calibrates a list of spectra in astropy.table.Tables by cross-correlating each spectrum with a reference.
@@ -663,7 +664,12 @@ def cc_calibrate_spectra(
     # FOR EACH SPECTRUM...
     logging.info("cc_calibrate_spectra: spacing={0}, width={1}".format(spacing, width))
     for idx in range(len(spectra)):
-        logging.info("---- spectrum #{0} ----".format(idx))
+        if headers is None:
+            fibre_label = '#'+str(idx)
+        else:
+            header = headers[idx]
+            fibre_label = header[f'IF-LA{idx:03d}']
+        logging.info("---- spectrum of fibre {0} ({1}/{2}) ----".format(fibre_label, idx+1, len(spectra)))
         spectrum = spectra[idx]
         pix = spectrum[pixcol]
         flux = spectrum[flxcol]
@@ -677,8 +683,8 @@ def cc_calibrate_spectra(
                 wav += approx[i] * pix**i
         else:
             logging.error(
-                "No approximate wavelength scale available for spectrum #{0}".format(
-                    idx
+                "No approximate wavelength scale available for spectrum of fibre {0}".format(
+                    fibre_label
                 )
             )
             return False
@@ -737,7 +743,7 @@ def cc_calibrate_spectra(
             plt.tight_layout()
             plt.xlabel("wavelength [nm]")
             plt.ylabel("flux")
-            # plt.title ('spectrum #{0}'.format(idx))
+            plt.title('spectrum of fibre {0}'.format(fibre_label))
             plt.plot(refwav, refflx * factor, "-", color="blue", label="ref")
             plt.plot(w, flux, "-", color="black", label="#{0}".format(idx))
             plt.legend(
@@ -1072,7 +1078,7 @@ wavelength calibration so that the regions to be cross-correlated are reasonably
 
     # ---- FOR ALL TABLES
     for infile, outfile in zip(infiles, outfiles):
-        spectra, header = read_tables(pathname=infile)
+        spectra, headers = read_tables(pathname=infile)
         if len(spectra) == 0:
             logging.critical(f"no spectra read from {infile}")
 
@@ -1111,6 +1117,7 @@ wavelength calibration so that the regions to be cross-correlated are reasonably
                 wave_ranges=info["wave_ranges"],
                 fix_mu=info["fix_mu"],
                 prompt=cfg["pause"],
+                headers=headers,
             ):
                 logging.error("ABORTED wavelength calibration!")
                 ok = False
@@ -1121,7 +1128,7 @@ wavelength calibration so that the regions to be cross-correlated are reasonably
             if "out_format" not in info:
                 info["out_format"] = None
             write_tables(
-                spectra, header=header, pathname=outfile, fmt=info["out_format"]
+                spectra, header=None, pathname=outfile, fmt=info["out_format"] #TODO: add a suitable header again
             )
 
         logging.info(
