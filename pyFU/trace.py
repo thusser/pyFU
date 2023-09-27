@@ -16,7 +16,7 @@ import matplotlib as mpl
 import logging
 import yaml
 
-from pyFU.utils import centroid1D, find_peaks, show_hdu
+from pyFU.utils import centroid1D, find_peaks, show_hdu, get_infiles_and_outfiles
 from astropy.io import fits
 from matplotlib import pyplot as plt
 
@@ -1457,12 +1457,12 @@ def main():
             "type": float,
             "help": "Gaussian width of spectra",
         },
-        "infile": {
+        "infiles": {
             "path": "trace:",
             "default": None,
             "flg": "-i",
             "type": str,
-            "help": "FITS file name (default ./spectra/test.fits)",
+            "help": "input FITS file names (default None)",
         },
         "ignore": {
             "path": None,
@@ -1492,6 +1492,13 @@ def main():
             "flg": "-n",
             "type": int,
             "help": "number of IFU fibres",
+        },
+        "outfiles": {
+            "path": "trace:",
+            "default": None,
+            "flg": "-Y",
+            "type": str,
+            "help": "pathnames of output YAML file for trace coefficents",
         },
         "plot": {
             "path": None,
@@ -1563,13 +1570,6 @@ def main():
             "type": float,
             "help": "vertical spacing of spectra",
         },
-        "save": {
-            "path": "trace:",
-            "default": None,
-            "flg": "-Y",
-            "type": str,
-            "help": "pathname of output YAML file for trace coefficents",
-        },
         "yaml": {
             "path": None,
             "default": None,
@@ -1593,49 +1593,59 @@ def main():
         sys.exit(0)
 
     # ---- GET INPUT DATA
-    if "infile" not in info or info["infile"] is None:
-        logging.critical("no input filename!")  # NEITHER CONFIG NOR ARGS
+    if "infiles" not in info or info["infiles"] is None:
+        logging.critical("no input filenames!")  # NEITHER CONFIG NOR ARGS
         sys.exit(1)
-    logging.debug("infile: {0}".format(info["infile"]))
-    hdus = fits.open(info["infile"], mode="update")
-    hdu = hdus[0]
 
-    # ---- GET TRACER
-    # print (cfg)
-    tracer = SpectrumTracer(hdu, config=cfg, ignore=args.ignore)
+    infiles, outfiles = get_infiles_and_outfiles(args.infiles, args.outfiles, cfg=info)
+    failed_files = []
+    for infile, outfile in zip(infiles, outfiles):
+        # ---- GET TRACER
+        logging.debug("infile: {0}".format(infile))
+        hdus = fits.open(infile, mode="update")
+        hdu = hdus[0]
+        tracer = SpectrumTracer(hdu, config=cfg, ignore=args.ignore)
 
-    # ---- PLOT HDU IMAGE AND HORIZONTAL TRACES
-    if args.plot:
-        logging.info("Plotting traces...")
-        tracer.plot_traces(show_data=True, kappa=0.5)
 
-    # ---- GET EXTERNAL CSV FILE WITH VERTICAL SLICE POSITIONS
-    if args.slices is not None:
-        tab = Table.read(args.slices, format="ascii.csv")
-        logging.debug(f"table with vertical slice positions:\n{str(tab)}")
-        tracer.use_external_slices(tab)
-        """
-		except :
-			print ('cannot load external slices from CSV file ',args.slices)
-			sys.exit(1)
-		"""
+        # ---- PLOT HDU IMAGE AND HORIZONTAL TRACES
+        if args.plot:
+            logging.info("Plotting traces...")
+            tracer.plot_traces(show_data=True, kappa=0.5)
 
-    # ---- FIND SPECTRA
-    tracer.find_spectra(show=args.plot, details=args.details)
+        # ---- GET EXTERNAL CSV FILE WITH VERTICAL SLICE POSITIONS
+        if args.slices is not None:
+            tab = Table.read(args.slices, format="ascii.csv")
+            logging.debug(f"table with vertical slice positions:\n{str(tab)}")
+            tracer.use_external_slices(tab)
+            """
+            except :
+                print ('cannot load external slices from CSV file ',args.slices)
+                sys.exit(1)
+            """
 
-    # ---- FIT TRACES
-    tracer.fit_traces(show=args.plot)
+        # ---- FIND SPECTRA
+        try:
+            tracer.find_spectra(show=args.plot, details=args.details)
+        except:
+            failed_files.append(infile)
+            logging.warning('Tracing failed for ' + infile)
+            continue
 
-    # ---- UPDATE HDU HEADER
-    hdus.flush()
+        # ---- FIT TRACES
+        tracer.fit_traces(show=args.plot)
 
-    # ---- SAVE TRACE COEFFICIENTS IN A YAML FILE
-    if "save" in info and info["save"] is not None:
-        logging.info("Saving trace coefficients..")
-        tracer.save_coefficients(info["save"])
 
-    logging.info("****************************************************************")
+        # ---- UPDATE HDU HEADER
+        hdus.flush()
 
+        # ---- SAVE TRACE COEFFICIENTS IN A YAML FILE
+        if "outfiles" in info and info["outfiles"] is not None:
+            logging.info("Saving trace coefficients..")
+            tracer.save_coefficients(outfile)
+
+        logging.info("****************************************************************")
+    if len(failed_files) > 0:
+        logging.warning('Tracing failed for ' + str(failed_files))
 
 if __name__ == "__main__":
     main()
