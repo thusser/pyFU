@@ -1517,7 +1517,8 @@ def parse_arguments(arguments, readme=None, config=None, parser=None, verbose=Fa
         if verbose:
             print("\nadding ", content, "\n\tto", key)
         loc[key] = content
-
+        if adict[arg] is None:
+            adict[arg] = content  # ADDS THE CONTENT TO args, NOT TO config
 
     # ---- RESULTS
     if verbose:
