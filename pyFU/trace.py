@@ -839,9 +839,6 @@ class SpectrumTracer(object):
         if self._fibres is None or len(self._fibres) == 0:
             logging.debug(f"resetting inner fibre list ({n1})")
             self._fibres = {}
-        print(self.get_fibre(0).label, self.get_fibre(0))
-        print(self.get_fibre(1).label, self.get_fibre(1))
-        print(self.get_fibre(2).label, self.get_fibre(2))
         for idx in range(0, n1):  # idx RUNS FROM 1 TO n1
             d = spectra[mask[idx]]
             d["index"] = idx
@@ -865,7 +862,8 @@ class SpectrumTracer(object):
         """Returns the Fibre object with the index (int) or label (str) "idxlabel"."""
         if self._fibres is None:
             return None
-        for idx, fibre in enumerate(self._fibres):  # self._fibres.items():
+        print(self._fibres)
+        for idx, fibre in enumerate(self._fibres):  # self._fibres.items(): #TODO: solve this problem
             if fibre is None:
                 return None
             else:
@@ -1624,12 +1622,13 @@ def main():
             """
 
         # ---- FIND SPECTRA
-        try:
-            tracer.find_spectra(show=args.plot, details=args.details)
-        except:
-            failed_files.append(infile)
-            logging.warning('Tracing failed for ' + infile)
-            continue
+        # try:
+        #     tracer.find_spectra(show=args.plot, details=args.details)
+        # except:
+        #     failed_files.append(infile)
+        #     logging.warning('Tracing failed for ' + infile)
+        #     continue
+        tracer.find_spectra(show=args.plot, details=args.details)
 
         # ---- FIT TRACES
         tracer.fit_traces(show=args.plot)
