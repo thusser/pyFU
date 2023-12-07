@@ -252,7 +252,7 @@ class ItemProperties(object):
 
 
 class SimpleMenuItem(artist.Artist):
-    parser = mathtext.MathTextParser("agg")
+    parser = mathtext.MathTextParser("bitmap")
     padx = 5
     pady = 5
 

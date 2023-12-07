@@ -411,7 +411,6 @@ class SpectrumTracer(object):
         # GET PARAMETERS
         pos = p[0:ng]
         amp = p[ng : 2 * ng + 1]
-        print(n, ng) #TODO: remove
         # GET SIGMA
         if (
             n % ng == 1 or n == 3
@@ -1485,7 +1484,7 @@ def main():
             "help": "number of vertical slices",
         },
         "number_fibres": {
-            "path": "trace:",
+            "path": "ifu:",
             "default": None,
             "flg": "-n",
             "type": int,

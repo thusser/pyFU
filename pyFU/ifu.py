@@ -149,22 +149,23 @@ class Fibre(object):
         else:
             labels = info["slit_labels"]  # DICTIONARY WITH NON-ZERO INTEGER KEYS ?
             if isinstance(labels, list):  # CONVERT LIST TO DICTIONARY
-                labels = {idx + 1: labels[idx] for idx in range(len(labels))}
+                labels = {idx: labels[idx] for idx in range(len(labels))}
             idx0 = 0  # STARTING POINT SHIFT IN LABEL ARRAY?
             if ("slit_start" in info) and (info["slit_start"] is not None):
                 idx0 = info["slit_start"] - 1
 
             if labels is not None:
                 if len(labels) == 1:  # JUST ONE LABEL FOR ONE FIBRE
-                    self.label = labels[1]
+                    self.label = labels[0]
                 else:
                     ii = self.index + idx0
-                    if ii <= 0 or ii > len(labels):
+                    if ii < 0 or ii > len(labels):
                         logging.warning(
                             f"fibre label {ii} does not match index {self.index} - using default"
                         )
                     else:
                         # print ('ii=',ii,', labels=',labels)
+                        print('LABELLING for fibre', ii)
                         self.label = labels[ii]
 
         logging.debug(f"labels:{labels}")
