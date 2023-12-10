@@ -683,6 +683,13 @@ def main():
             "type": str,
             "help": "pathname of output FITS image file",
         },
+        "packed_fits": {
+            "path": None,
+            "default": True,
+            "flg": "-pck",
+            "type": bool,
+            "help": "True if input end with fits.fz, which is the case for pyobs-archive files",
+        },
         "plot": {
             "path": None,
             "default": False,
@@ -999,7 +1006,11 @@ def main():
                 s += "t"
             logging.info(f"calibrating ({s}) {infile} ...")
             hdus = fits.open(infile)
-            hdu = hdus[args.start_hdu]
+            if info['packed_fits']:
+                hdu = hdus['sci']#args.start_hdu]
+            else:
+                hdu = hdus[args.start_hdu]
+
             hdr = hdu.header
 
             # ---- REDUCE
