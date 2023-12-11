@@ -955,6 +955,13 @@ wavelength calibration so that the regions to be cross-correlated are reasonably
             "type": bool,
             "help": "pause/prompt after every spectral calibration",
         },
+        "packed_fits": {
+            "path": None,
+            "default": True,
+            "flg": "-pck",
+            "type": bool,
+            "help": "True if input end with fits.fz, which is the case for pyobs-archive files",
+        },
         "pixcol": {
             "path": "wavcal:",
             "default": "pixel",

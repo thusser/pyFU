@@ -392,6 +392,13 @@ def main():
             "type": str,
             "help": "output FITS file names (default None)",
         },
+        "packed_fits": {
+            "path": None,
+            "default": True,
+            "flg": "-pck",
+            "type": bool,
+            "help": "True if input end with fits.fz, which is the case for pyobs-archive files",
+        },
         "pixcol": {
             "path": "extract:",
             "default": "pixel",
@@ -466,7 +473,10 @@ def main():
 
         # ---- READ IN DATA
         hdus = fits.open(infile)
-        hdu = hdus[0]
+        if info['packed_fits']:
+            hdu = hdus['sci']
+        else:
+            hdu = hdus[0]
 
         # ---- OPTIONAL VERTICAL FLIP
         if args.vflip:

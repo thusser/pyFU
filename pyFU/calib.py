@@ -746,7 +746,7 @@ def main():
             "type": bool,
             "help": "subtract scaled unit dark from image",
         },
-        "sum": {
+        "stack": {
             "path": None,
             "default": False,
             "flg": "-S",
@@ -802,6 +802,7 @@ def main():
     info = cfg["calib"]
     logging.debug("\ncfg:\n" + str(info))
 
+    args.stack = info['stack']
     # ---- LOGGING
     initialize_logging(config=cfg)
     logging.info(
@@ -833,7 +834,7 @@ def main():
 
     # ---- SPECIAL FUNCTIONS?
     special = (
-        args.sum
+        args.stack
         or args.average
         or args.stddev
         or args.minus
@@ -846,6 +847,8 @@ def main():
         or args.xmean
         or args.ymean
     )
+    print(args.stack)
+    print("Special?", special)
     if special:
         if args.subtract_bias or args.subtract_dark or args.divide_flat:
             logging.error(
@@ -1007,7 +1010,7 @@ def main():
             logging.info(f"calibrating ({s}) {infile} ...")
             hdus = fits.open(infile)
             if info['packed_fits']:
-                hdu = hdus['sci']#args.start_hdu]
+                hdu = hdus['sci']
             else:
                 hdu = hdus[args.start_hdu]
 
@@ -1053,7 +1056,7 @@ def main():
 
     if special:
         # SIMPLE AVERAGE,SUM,STD OF MULTIPLE FILES
-        if args.sum or args.average or args.stddev:
+        if args.stack or args.average or args.stddev:
             if len(infiles) == 1 or len(outfiles) > 1:
                 logging.error(
                     "cannot sum/average/stddev {0} images into {1} image".format(
@@ -1063,14 +1066,20 @@ def main():
                 sys.exit(1)
             nz = len(infiles)
             hdus = fits.open(infiles[0])
-            hdu = hdus[args.start_hdu]
+            if info['packed_fits']:
+                hdu = hdus['sci']  # args.start_hdu]
+            else:
+                hdu = hdus[args.start_hdu]
             shap = hdu.data.shape
             data = np.zeros((nz, shap[0], shap[1]))
             data[0] = hdu.data
             for i in range(1, nz):
                 filename = infiles[i]
                 hs = fits.open(filename)
-                h = hs[args.start_hdu]
+                if info['packed_fits']:
+                    h = hs['sci']  # args.start_hdu]
+                else:
+                    h = hs[args.start_hdu]
                 data[i] = np.array(h.data)
                 hdu.header["COMMENT"] = f"using {filename}"
                 hdus.close()
@@ -1078,7 +1087,7 @@ def main():
             if args.average:
                 hdu.data = np.nanmean(data, axis=0)
                 hdu.header["COMMENT"] = "mean of used"
-            elif args.sum:
+            elif args.stack:
                 hdu.data = np.nansum(data, axis=0)
                 hdu.header["COMMENT"] = "sum of used"
             elif args.stddev:

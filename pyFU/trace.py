@@ -1497,6 +1497,13 @@ def main():
             "type": str,
             "help": "pathnames of output YAML file for trace coefficents",
         },
+        "packed_fits": {
+            "path": None,
+            "default": False,
+            "flg": "-pck",
+            "type": bool,
+            "help": "True if input end with fits.fz, which is the case for pyobs-archive files",
+        },
         "plot": {
             "path": None,
             "default": None,
@@ -1600,14 +1607,14 @@ def main():
         # ---- GET TRACER
         logging.debug("infile: {0}".format(infile))
         hdus = fits.open(infile, mode="update")
-        hdu = hdus[0]
+        if info['packed_fits']:
+            hdu = hdus['sci']
+        else:
+            hdu = hdus[0]
         tracer = SpectrumTracer(hdu, config=cfg, ignore=args.ignore)
 
 
-        # ---- PLOT HDU IMAGE AND HORIZONTAL TRACES
-        if args.plot:
-            logging.info("Plotting traces...")
-            tracer.plot_traces(show_data=True, kappa=0.5)
+
 
         # ---- GET EXTERNAL CSV FILE WITH VERTICAL SLICE POSITIONS
         if args.slices is not None:
@@ -1632,6 +1639,10 @@ def main():
         # ---- FIT TRACES
         tracer.fit_traces(show=args.plot)
 
+        # ---- PLOT HDU IMAGE AND HORIZONTAL TRACES
+        if args.plot:
+            logging.info("Plotting traces...")
+            tracer.plot_traces(show_data=True, kappa=0.5)
 
         # ---- UPDATE HDU HEADER
         hdus.flush()
