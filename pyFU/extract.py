@@ -180,7 +180,7 @@ class SpectrumExtractor(object):
             # ... GET AMPLITUDES, SIGMAS, AND MODELS
             sig = fibre.sigma
             if sig is None:
-                raise ValueError("sigma={1} for fibre #{2}".format(sig, idx))
+                raise ValueError("sigma={0} for fibre #{1}".format(sig, idx))
             isigma = int(sig)
             pc, fc = fibre.get_trace_position_model()
             pa, fa = fibre.get_trace_amplitude_model()
@@ -242,10 +242,10 @@ class SpectrumExtractor(object):
 
                 # GET REGION TO EXTRACT
                 j = int(yc)
-                j1 = j - isigma * 3 - 1  # 1 PIXEL EXTRA FOR FRACTIONAL PIXELS
+                j1 = j - isigma - 1  # 1 PIXEL EXTRA FOR FRACTIONAL PIXELS
                 if j1 < 0:
                     j1 = 0
-                j2 = j + isigma * 3 + 1
+                j2 = j + isigma + 1
                 if j2 >= ny:
                     j2 = ny - 1
                 n = j2 - j1 + 1
@@ -414,7 +414,7 @@ def main():
             "help": "plot details",
         },
         "trace": {
-            "path": "trace:save",
+            "path": "extract:",
             "default": None,
             "flg": "-T",
             "type": str,
@@ -430,6 +430,7 @@ def main():
     }
     args, cfg = parse_arguments(arguments)
     info = cfg["extract"]
+
 
     # ---- LOGGING
     initialize_logging(config=cfg)
@@ -517,7 +518,7 @@ def main():
             for i in range(len(spectra) - 1, -1, -1):
                 s = spectra[i]
                 x = s[info["pixcol"]].data
-                f = s[info["flxcol"]].data + i * shift
+                f = s[info["flxcol"]].data# + i * shift
                 e = s[info["errcol"]].data
                 lab = "#{0}".format(i + 1)
                 fibre = tracer.get_fibre(i)
