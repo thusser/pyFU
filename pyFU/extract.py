@@ -297,7 +297,9 @@ class SpectrumExtractor(object):
                         )
                     wgt = prof / (last_prof + prof + next_prof)
                     wgtsum = np.nansum(wgt)
-                    flux = np.nansum(wgt * pdata) / wgtsum
+                    #flux = np.nansum(wgt * pdata) / wgtsum   # TODO: think about correct weighting (current one leads to too small values)
+                    #print(f'Trace from {j1} to {j2}.')
+                    flux = np.nansum(pdata)
                     f2err = np.nansum(wgt**2 * pnoise**2)
                     ferr = np.sqrt(f2err) / wgtsum
                     fdata[i] = flux
