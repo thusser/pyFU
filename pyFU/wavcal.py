@@ -789,7 +789,7 @@ def cc_calibrate_spectra(
 
 
 def transfer_wavelengths_by_index(
-    refs, extracted, pixcol="pixel", wavcol="wavelength", flxcol="flux"
+    refs, extracted, pixcol="pixel", wavcol="wavelength", flxcol="flux", show=False
 ) -> bool:
     """
     Transfers the wavelength calibration from a list of source spectra to a set of
@@ -815,6 +815,12 @@ def transfer_wavelengths_by_index(
 		else :
 			refidx[hdr[key]] = i
 	"""
+    if show:
+        plt.figure()
+        plt.style.use("ggplot")
+        plt.tight_layout()
+        plt.xlabel("wavelength [nm]")
+        plt.ylabel("flux")
 
     for i in range(n):
         ref = refs[i]
@@ -822,6 +828,7 @@ def transfer_wavelengths_by_index(
         refcols = ref.colnames
         cols = spectrum.colnames
         hdr = spectrum.meta
+        fibre_label = hdr[f'IF-LA{i:03d}']
         if wavcol not in refcols:
             logging.error(
                 "transfer_calibration: wavelength column names not present in reference #{0}!".format(
@@ -848,8 +855,14 @@ def transfer_wavelengths_by_index(
                     )
                     return False
                 spectrum["flux_correction"] = ref["flux_correction"] + 0.0
-                spectrum[flxcol] *= spectrum["flux_correction"]
+                # spectrum[flxcol] *= spectrum["flux_correction"]
                 hdr["comment"] = "transfered flux correction from source table"
+
+        if show:
+            plt.plot(spectrum[wavcol], spectrum [flxcol], "-", label='fibre {0}'.format(fibre_label))
+    if show:
+        plt.legend()
+        plt.show()
     return True
 
 
@@ -872,7 +885,7 @@ wavelength calibration so that the regions to be cross-correlated are reasonably
             "help": "rough wavelength calibration w0,d0,... where wav ~ w0+d0*pix+...",
         },
         "copy": {
-            "path": None,
+            "path": "wavcal:",
             "default": None,
             "flg": "-c",
             "type": str,
@@ -1079,6 +1092,14 @@ wavelength calibration so that the regions to be cross-correlated are reasonably
             sys.exit(1)
         refwav = reftab[0][info["wcol"]]
         refflx = reftab[0][info["fcol"]]
+    elif "copy" in info and info["copy"] is not None:
+        logging.info('Reading reference file {info["copy"]} ...')
+        reftab, hdr = read_tables(pathname=info["copy"])
+        if len(reftab) < 1:
+            logging.critical("reference file does not contain any spectra!")
+            sys.exit(1)
+        refwav = reftab[0][info["wcol"]]
+        refflx = reftab[0][info["fcol"]]
     else:
         logging.critical("no reference file given!")
         sys.exit(1)
@@ -1092,12 +1113,12 @@ wavelength calibration so that the regions to be cross-correlated are reasonably
         ok = True
 
         # ---- TRANSFER WAVELENGTH AND FLUX CALIBRATIONS
-        if args.copy:
+        if args.copy is not None:
             logging.info(
                 f"transfering wavelength calibration from reference to {infile}"
             )
             if not transfer_wavelengths_by_index(
-                reftab, spectra, wavcol=info["wavcol"], flxcol=info["flxcol"]
+                reftab, spectra, wavcol=info["wavcol"], flxcol=info["flxcol"], show=args.plot
             ):
                 logging.error(
                     "ABORTED spectral calibration via transfer from reference!"
