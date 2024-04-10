@@ -141,7 +141,7 @@ class SpectrumExtractor(object):
         elif method == "integrate":
             return self._simple_extract(hdu, dark=dark, integrate=True)
 
-    def _simple_extract(self, hdu, dark=None, integrate=False) -> list:
+    def _simple_extract(self, hdu, dark=None, integrate=True) -> list:
         """
         Simple weighted extraction.
         """
@@ -160,32 +160,30 @@ class SpectrumExtractor(object):
         xdata = np.arange(nx)
 
         # FOR EACH TRACED SPECTRUM ...
-        ns = self.tracer.number_of_traces()
-        if ns <= 0:
+        n_traces = self.tracer.number_of_traces()
+        if n_traces <= 0:
             raise ValueError("no traced spectra!")
         spectra = []
         fibre = None
         next_fibre = self.tracer.get_fibre(0)
-        for idx in range(0, ns):
-            hdr = {}
-
+        for trace_id in range(0, n_traces):
             # ... GET NEIGHBORING FIBRES
             last_fibre = fibre
             fibre = next_fibre
-            if idx <= ns:
-                next_fibre = self.tracer.get_fibre(idx + 1)
+            if trace_id <= n_traces:
+                next_fibre = self.tracer.get_fibre(trace_id + 1)
             else:
                 next_fibre = None
 
             # ... GET AMPLITUDES, SIGMAS, AND MODELS
             sig = fibre.sigma
             if sig is None:
-                raise ValueError("sigma={0} for fibre #{1}".format(sig, idx))
-            isigma = int(sig)
-            pc, fc = fibre.get_trace_position_model()
-            pa, fa = fibre.get_trace_amplitude_model()
-            ycent = fc(xdata, *pc)  # FITTED CENTERS    OF SPECTRA
-            amp = fa(xdata, *pa)  # FITTED AMPLITUDES OF SPECTRA
+                raise ValueError("sigma={0} for fibre #{1}".format(sig, trace_id))
+            vertical_width = int(fibre.sigma)
+            position_coefficients, position_function = fibre.get_trace_position_model()
+            amplitude_coefficients, amplitude_function = fibre.get_trace_amplitude_model()
+            vertical_centers = position_function(xdata, *position_coefficients)  # FITTED CENTERS    OF SPECTRA
+            amplitudes = amplitude_function(xdata, *amplitude_coefficients)  # FITTED AMPLITUDES OF SPECTRA
 
             if (
                 last_fibre is None
@@ -193,17 +191,15 @@ class SpectrumExtractor(object):
                 or last_fibre.sigma is None
                 or last_fibre.trace_coef is None
             ):
-                last_sig = self.sigma
-                last_pc, last_fc = pc, fc
-                last_pa, last_fa = pa, fa
-                last_ycent = ycent
-                last_amp = amp
+                last_vertical_width = self.sigma
+                last_vertical_centers = vertical_centers
+                last_amplitudes = amplitudes
             else:
-                last_sig = last_fibre.sigma
-                last_pc, last_fc = last_fibre.get_trace_position_model()
-                last_pa, last_fa = last_fibre.get_trace_amplitude_model()
-                last_ycent = last_fc(xdata, *last_pc)
-                last_amp = last_fa(xdata, *last_pa)
+                last_vertical_width = last_fibre.sigma
+                last_position_coefficients, last_position_function = last_fibre.get_trace_position_model()
+                last_amplitude_coefficients, last_amplitude_function = last_fibre.get_trace_amplitude_model()
+                last_vertical_centers = last_position_function(xdata, *last_position_coefficients)
+                last_amplitudes = last_amplitude_function(xdata, *last_amplitude_coefficients)
 
             if (
                 next_fibre is None
@@ -211,106 +207,102 @@ class SpectrumExtractor(object):
                 or next_fibre.sigma is None
                 or next_fibre.trace_coef is None
             ):
-                next_sig = self.sigma
-                next_pc, next_fc = pc, fc
-                next_pa, next_fa = pa, fa
-                next_ycent = ycent
-                next_amp = amp
+                next_vertical_width = self.sigma
+                next_vertical_centers = vertical_centers
+                next_amplitudes = amplitudes
             else:
-                next_sig = next_fibre.sigma
-                next_pc, next_fc = next_fibre.get_trace_position_model()
-                next_pa, next_fa = next_fibre.get_trace_amplitude_model()
-                next_ycent = next_fc(xdata, *next_pc)
-                next_amp = next_fa(xdata, *next_pa)
+                next_vertical_width = next_fibre.sigma
+                next_position_coefficients, next_position_function = next_fibre.get_trace_position_model()
+                next_amplitude_coefficients, next_amplitude_function = next_fibre.get_trace_amplitude_model()
+                next_vertical_centers = next_position_function(xdata, *next_position_coefficients)
+                next_amplitudes = next_amplitude_function(xdata, *next_amplitude_coefficients)
 
             # ... GET VALUE FOR EACH HORIZONTAL PIXEL
-            fdata = np.zeros(nx)
-            edata = np.zeros(nx)
+            fluxes = np.zeros(nx)
+            flux_errors = np.zeros(nx)
 
-            erfs = sig * np.sqrt(2.0)  # FUNNY NORMALIZATION OF erf()
-            last_erfs = last_sig * np.sqrt(2.0)
-            next_erfs = next_sig * np.sqrt(2.0)
+            error_function = vertical_width * np.sqrt(2.0)  # FUNNY NORMALIZATION OF erf()
+            last_error_function = last_vertical_width * np.sqrt(2.0)
+            next_error_function = next_vertical_width * np.sqrt(2.0)
 
-            for i in range(nx):  # FOR ALL X-PIXELS
-                x = float(i)
-                yc = ycent[i]
-                ac = amp[i]
-                last_yc = last_ycent[i]
-                last_ac = last_amp[i]
-                next_yc = next_ycent[i]
-                next_ac = next_amp[i]
+            for x_pixel in range(nx):  # FOR ALL X-PIXELS
+                vertical_center = int(vertical_centers[x_pixel])
+                amplitude = amplitudes[x_pixel]
+                last_vertical_center = last_vertical_centers[x_pixel]
+                last_amplitude = last_amplitudes[x_pixel]
+                next_vertical_center = next_vertical_centers[x_pixel]
+                next_amplitude = next_amplitudes[x_pixel]
 
                 # GET REGION TO EXTRACT
-                j = int(yc)
-                j1 = j - isigma - 1  # 1 PIXEL EXTRA FOR FRACTIONAL PIXELS
-                if j1 < 0:
-                    j1 = 0
-                j2 = j + isigma + 1
-                if j2 >= ny:
-                    j2 = ny - 1
-                n = j2 - j1 + 1
-                if j1 < 0 or j2 >= ny or n < 1:
-                    fdata[i] = np.nan
-                    edata[i] = np.nan
+                vertical_lower_limit = vertical_center - vertical_width - 1  # 1 PIXEL EXTRA FOR FRACTIONAL PIXELS
+                if vertical_lower_limit < 0:
+                    vertical_lower_limit = 0
+                vertical_upper_limit = vertical_center + vertical_width + 1
+                if vertical_upper_limit >= ny:
+                    vertical_upper_limit = ny - 1
+                n_pixels_inside = vertical_upper_limit - vertical_lower_limit + 1
+                if vertical_lower_limit < 0 or vertical_upper_limit >= ny or n_pixels_inside < 1:
+                    fluxes[x_pixel] = np.nan
+                    flux_errors[x_pixel] = np.nan
 
                 else:
                     # GET EXTRACTED DATA PROFILE
-                    yp = np.linspace(j1, j2, n)
-                    pdata = data[j1 : j2 + 1, i]
-                    pnoise = noise[j1 : j2 + 1, i]
+                    y_pixels = np.linspace(vertical_lower_limit, vertical_upper_limit, n_pixels_inside)
+                    data_inside = data[vertical_lower_limit: vertical_upper_limit, x_pixel]
+                    noise_inside = noise[vertical_lower_limit: vertical_upper_limit, x_pixel]
 
                     # USE SIMPLE GAUSSIAN WEIGHTING
                     if not integrate:
-                        prof = ac * np.exp(-((yc - yp) ** 2) / sig**2)
-                        last_prof = last_ac * np.exp(
-                            -((last_yc - yp) ** 2) / last_sig**2
+                        profile = amplitude * np.exp(-((vertical_center - y_pixels) ** 2) / sig ** 2)
+                        last_profile = last_amplitude * np.exp(
+                            -((last_vertical_center - y_pixels) ** 2) / last_vertical_width ** 2
                         )
-                        next_prof = next_ac * np.exp(
-                            -((next_yc - yp) ** 2) / next_sig**2
+                        next_profile = next_amplitude * np.exp(
+                            -((next_vertical_center - y_pixels) ** 2) / next_vertical_width ** 2
                         )
 
                     # OR INTEGRATED GAUSSIAN WEIGHTING 0.5*(1-erf(dx/sqrt(2))), dx=(y-ycenter)/sigma
                     else:
-                        prof = (
-                            ac
-                            * 0.5
-                            * (
-                                erf((yp - yc + 0.5) / erfs)
-                                - erf((yp - yc - 0.5) / erfs)
+                        profile = (
+                                amplitude
+                                * 0.5
+                                * (
+                                erf((y_pixels - vertical_center + 0.5) / error_function)
+                                - erf((y_pixels - vertical_center - 0.5) / error_function)
                             )
                         )
-                        last_prof = (
-                            last_ac
-                            * 0.5
-                            * (
-                                erf((yp - last_yc + 0.5) / last_erfs)
-                                - erf((yp - last_yc - 0.5) / last_erfs)
+                        last_profile = (
+                                last_amplitude
+                                * 0.5
+                                * (
+                                erf((y_pixels - last_vertical_center + 0.5) / last_error_function)
+                                - erf((y_pixels - last_vertical_center - 0.5) / last_error_function)
                             )
                         )
-                        next_prof = (
-                            next_ac
-                            * 0.5
-                            * (
-                                erf((yp - next_yc + 0.5) / next_erfs)
-                                - erf((yp - next_yc - 0.5) / next_erfs)
+                        next_profile = (
+                                next_amplitude
+                                * 0.5
+                                * (
+                                erf((y_pixels - next_vertical_center + 0.5) / next_error_function)
+                                - erf((y_pixels - next_vertical_center - 0.5) / next_error_function)
                             )
                         )
-                    wgt = prof / (last_prof + prof + next_prof)
-                    wgtsum = np.nansum(wgt)
-                    #flux = np.nansum(wgt * pdata) / wgtsum   # TODO: think about correct weighting (current one leads to too small values)
-                    #print(f'Trace from {j1} to {j2}.')
-                    flux = np.nansum(pdata)
-                    f2err = np.nansum(wgt**2 * pnoise**2)
-                    ferr = np.sqrt(f2err) / wgtsum
-                    fdata[i] = flux
-                    edata[i] = ferr
+                    weights = profile / (last_profile + profile + next_profile)
+                    sum_of_weights = np.nansum(weights)
+                    #flux = np.nansum(weights * pdata) / sum_of_weights   # TODO: think about correct weighting (current one leads to too small values)
+                    #print(f'Trace from {vertical_upper_limit} to {j2}.')
+                    flux = np.nansum(data_inside)
+                    flux_err2 = np.nansum(weights ** 2 * noise_inside ** 2)
+                    flux_error = np.sqrt(flux_err2) / sum_of_weights
+                    fluxes[x_pixel] = flux
+                    flux_errors[x_pixel] = flux_error
 
             # ... CREATE A NEW TABLE FRO THE EXTRACTED SPECTRUM
             t = Table()
             t[self.pixcol] = Column(xdata, unit="pix", description="pixel_position")
-            t[self.flxcol] = Column(fdata, unit="adu", description="flux/pixel")
-            t[self.errcol] = Column(edata, unit="adu", description="err_flux/pixel")
-            t[self.idxcol] = Column(idx, unit="", description="rank")
+            t[self.flxcol] = Column(fluxes, unit="adu", description="flux/pixel")
+            t[self.errcol] = Column(flux_errors, unit="adu", description="err_flux/pixel")
+            t[self.idxcol] = Column(trace_id, unit="", description="rank")
 
             # ADD METADATA
             if not self.filter.copy_header(
