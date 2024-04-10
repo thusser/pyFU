@@ -114,7 +114,7 @@ class SimplePipeline(object):
                 logging.error("data and bias images have different shapes!")
         return hdr.data, bs
 
-    def global_bias(self, imagelist, show=False, outfile=None, biassec=None, hdu0=0):
+    def global_bias(self, imagelist, show=False, outfile=None, biassec=None, hdu0=0, packed_fits=True):
         """
         Returns the median bias from a list of (biassec-corrected?) bias images.
         """
@@ -127,7 +127,10 @@ class SimplePipeline(object):
         # READ FIRST IMAGE TO GET SIZE
         name = imagelist[0]
         hdus = fits.open(name)
-        hdu = hdus[hdu0]
+        if packed_fits:
+            hdu = hdus['sci']
+        else:
+            hdu = hdus[hdu0]
         ny, nx = hdu.data.shape
         header = hdu.header.copy()
         hdus.close()
@@ -138,7 +141,10 @@ class SimplePipeline(object):
         for i in range(n):
             l = imagelist[i]
             hdus = fits.open(l)
-            hdu = hdus[hdu0]
+            if packed_fits:
+                hdu = hdus['sci']
+            else:
+                hdu = hdus[hdu0]
             raw = hdu.data
             med, std = np.nanmedian(raw), np.nanstd(raw)
 
@@ -199,6 +205,7 @@ class SimplePipeline(object):
         outfile=None,
         millisec=False,
         hdu0=0,
+        packed_fits=True
     ):
         """
         Returns the unit dark frame from a list of dark images.
@@ -212,7 +219,10 @@ class SimplePipeline(object):
         # GET SHAPE OF DATA
         name = imagelist[0]
         hdus = fits.open(name)
-        hdu = hdus[hdu0]
+        if packed_fits:
+            hdu = hdus['sci']
+        else:
+            hdu = hdus[hdu0]
         ny, nx = hdu.data.shape
         data = np.zeros((n, ny, nx))
         header = hdu.header.copy()
@@ -223,7 +233,10 @@ class SimplePipeline(object):
         for i in range(n):
             name = imagelist[i]
             hdus = fits.open(name)
-            hdu = hdus[hdu0]
+            if packed_fits:
+                hdu = hdus['sci']
+            else:
+                hdu = hdus[hdu0]
             hdr = hdu.header
             raw = hdu.data
             med, std = np.nanmedian(raw), np.nanstd(raw)
@@ -295,6 +308,7 @@ class SimplePipeline(object):
         outfile=None,
         millisec=False,
         hdu0=0,
+        packed_fits=True
     ):
         """
         Returns the median scaled flatfield frame from a list of flatfield images.
@@ -307,7 +321,10 @@ class SimplePipeline(object):
         # GET SHAPE OF DATA
         name = imagelist[0]
         hdus = fits.open(name)
-        hdu = hdus[hdu0]
+        if packed_fits:
+            hdu = hdus['sci']
+        else:
+            hdu = hdus[hdu0]
         ny, nx = hdu.data.shape
         data = np.zeros((n, ny, nx))
         header = hdu.header.copy()
@@ -317,7 +334,10 @@ class SimplePipeline(object):
         for i in range(n):
             name = imagelist[i]
             hdus = fits.open(name)
-            hdu = hdus[hdu0]
+            if packed_fits:
+                hdu = hdus['sci']
+            else:
+                hdu = hdus[hdu0]
             raw = hdu.data
             hdr = hdu.header
             med, std = np.nanmedian(raw), np.nanstd(raw)
@@ -690,6 +710,27 @@ def main():
             "type": bool,
             "help": "True if input end with fits.fz, which is the case for pyobs-archive files",
         },
+        "packed_bias": {
+            "path": "calib:bias:",
+            "default": True,
+            "flg": "-pckb",
+            "type": bool,
+            "help": "True if input end with fits.fz, which is the case for pyobs-archive files",
+        },
+        "packed_dark": {
+            "path": "calib:dark:",
+            "default": True,
+            "flg": "-pckd",
+            "type": bool,
+            "help": "True if input end with fits.fz, which is the case for pyobs-archive files",
+        },
+        "packed_flat": {
+            "path": "calib:flat:",
+            "default": True,
+            "flg": "-pckf",
+            "type": bool,
+            "help": "True if input end with fits.fz, which is the case for pyobs-archive files",
+        },
         "plot": {
             "path": None,
             "default": False,
@@ -802,7 +843,7 @@ def main():
     info = cfg["calib"]
     logging.debug("\ncfg:\n" + str(info))
 
-    args.stack = info['stack']
+    args.average = info['stack']
     # ---- LOGGING
     initialize_logging(config=cfg)
     logging.info(
@@ -847,8 +888,7 @@ def main():
         or args.xmean
         or args.ymean
     )
-    print(args.stack)
-    print("Special?", special)
+
     if special:
         if args.subtract_bias or args.subtract_dark or args.divide_flat:
             logging.error(
@@ -882,6 +922,7 @@ def main():
             show=args.plot,
             outfile=dbias["masterbias"],
             hdu0=args.start_hdu,
+            packed_fits=dbias['packed_bias']
         )
 
     # NEED BIAS IMAGE?
@@ -915,6 +956,7 @@ def main():
             biassec=biassec,
             millisec=cfg["millisec"],
             hdu0=args.start_hdu,
+            packed_fits=ddark['packed_dark']
         )
 
     # NEED DARK IMAGE?
@@ -950,6 +992,7 @@ def main():
             bias=pipel.master_bias,
             millisec=cfg["millisec"],
             hdu0=args.start_hdu,
+            packed_fits=dflat['packed_flat']
         )
 
     # NEED FLAT IMAGE?
@@ -1035,6 +1078,10 @@ def main():
                     y1, y2, x1, x2 = get_sec(hdr, key=trimkey)
                 elif isinstance(trimsec, list):
                     y1, y2, x1, x2 = trimsec
+                if y2 == 0:
+                    y2 = hdu.data.shape[0]
+                if x2 == 0:
+                    x2 = hdu.data.shape[1]
                 hdu.data = hdu.data[y1:y2, x1:x2]
                 s = "... trimmed to array[{0}:{1}, {2}:{3}]".format(y1, y2, x1, x2)
                 hdr["comment"] = s
@@ -1067,7 +1114,7 @@ def main():
             nz = len(infiles)
             hdus = fits.open(infiles[0])
             if info['packed_fits']:
-                hdu = hdus['sci']  # args.start_hdu]
+                hdu = hdus['sci']
             else:
                 hdu = hdus[args.start_hdu]
             shap = hdu.data.shape
@@ -1077,7 +1124,7 @@ def main():
                 filename = infiles[i]
                 hs = fits.open(filename)
                 if info['packed_fits']:
-                    h = hs['sci']  # args.start_hdu]
+                    h = hs['sci']
                 else:
                     h = hs[args.start_hdu]
                 data[i] = np.array(h.data)
@@ -1125,7 +1172,7 @@ def main():
                 oper = "*"
             if args.raised_by:
                 oper = "^"
-            print(infiles, outfiles)
+
             for infile, outfile in zip((infiles, outfiles)):
                 logging.info(f"{outfile} = {infile} {oper} {args.other}")
                 hdu = pipel.maths(infile, oper, other_data)
