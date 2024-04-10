@@ -61,6 +61,7 @@ class SpectrumTracer(object):
         self.shape = None
         ny, nx = 0, 0
 
+
         if hdu is not None:
             hdr = hdu.header
             self.shape = hdu.data.shape
@@ -861,8 +862,7 @@ class SpectrumTracer(object):
         """Returns the Fibre object with the index (int) or label (str) "idxlabel"."""
         if self._fibres is None:
             return None
-        print(self._fibres)
-        for idx, fibre in enumerate(self._fibres):  # self._fibres.items(): #TODO: solve this problem
+        for idx, fibre in enumerate(self._fibres):  # self._fibres.items(): # TODO: solve this problem
             if fibre is None:
                 return None
             else:
