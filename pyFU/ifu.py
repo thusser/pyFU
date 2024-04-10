@@ -58,6 +58,7 @@ class Fibre(object):
         # ADOPT GIVEN INDEX
         self.index = idx
 
+
         # COMBINE INFO FROM GENERIC CONFIGURATION AND SPECIFIC HEADER
         if (header is not None) and (config is not None):
             cfg = dict(config)
@@ -165,7 +166,6 @@ class Fibre(object):
                         )
                     else:
                         # print ('ii=',ii,', labels=',labels)
-                        print('LABELLING for fibre', ii)
                         self.label = labels[ii]
 
         logging.debug(f"labels:{labels}")
@@ -255,8 +255,8 @@ class Fibre(object):
             logging.info('no config["trace"]["fit"]["amplitudes"]')
 
         # ... AMPLITUDE FUNCTION
-        if "ampl_model" in info:
-            self.ampl_model = info["ampl_model"]
+        if "ampl_model" in info["amplitudes"]:
+            self.ampl_model = info["amplitudes"]["ampl_model"]
         else:
             logging.warning('no amplitude model in configuration: assuming "polynomial')
             self.ampl_model = "polynomial"
