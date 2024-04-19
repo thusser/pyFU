@@ -804,20 +804,8 @@ def transfer_wavelengths_by_index(
         )
         return False
 
-    """
-	refidx = {}
-	for i in range(n) :
-		spectrum = refs[i]
-		hdr = spectrum.meta
-		key = keywds['index'][0]
-		if key not in hdr :
-			logging.error ('no index metadata for reference spectrum #{0}'.format(i))
-		else :
-			refidx[hdr[key]] = i
-	"""
     if show:
         plt.figure()
-        plt.style.use("ggplot")
         plt.tight_layout()
         plt.xlabel("wavelength [nm]")
         plt.ylabel("flux")
