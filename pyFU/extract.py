@@ -248,8 +248,8 @@ class SpectrumExtractor(object):
                 else:
                     # GET EXTRACTED DATA PROFILE
                     y_pixels = np.linspace(vertical_lower_limit, vertical_upper_limit, n_pixels_inside)
-                    data_inside = data[vertical_lower_limit: vertical_upper_limit, x_pixel]
-                    noise_inside = noise[vertical_lower_limit: vertical_upper_limit, x_pixel]
+                    data_inside = data[vertical_lower_limit: vertical_upper_limit + 1, x_pixel]
+                    noise_inside = noise[vertical_lower_limit: vertical_upper_limit + 1, x_pixel]
 
                     # USE SIMPLE GAUSSIAN WEIGHTING
                     if not integrate:
