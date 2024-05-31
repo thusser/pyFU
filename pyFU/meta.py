@@ -366,7 +366,7 @@ class HeaderFilter (object) :
 
 		self.keywords = keywords
 		self.formats  = formats
-		self.keep     = []		# NORMALLY KEPT
+		self.keep     = ['EXPTIME']		# NORMALLY KEPT
 		self.ignore   = []		# NORMALLY IGNORED
 		self.prefixes = []		# LIST OF FORMAT PREFIXES AND FORMATS
 		self.nuke     = []		# LIST OF ALL POSSIBLE pyFU KEYWORDS
@@ -427,10 +427,8 @@ class HeaderFilter (object) :
 						things = sscanf(fmt,keyw)
 						if len(things) >= 1 and things[0] == idx :
 							ok = True
-							# print (keyw,fmt,things,' == ',idx,ok)
-						else :
+						else:
 							ok = False
-							# print (keyw,fmt,things,' != ',idx,ok)
 
 
 			# REMOVE ALL pyFU KEYWORDS
@@ -446,10 +444,8 @@ class HeaderFilter (object) :
 							# print (keyw,fmt,things,ok)
 
 			# OR KEEP KEPT KEYWORDS
-			else :
-				if keyw in self.keep :
-					ok = True
-					# print ('keep',keyw,ok)
+			if keyw in self.keep :
+				ok = True
 
 			# TRANSFER
 			if ok :
